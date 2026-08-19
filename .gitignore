@@ -1,0 +1,48 @@
+# Datasets (Excluded to avoid pushing gigabytes of images)
+dataset/
+new_dataset/
+test_dataset/
+final_dataset/
+balanced_dataset/
+outputs/
+*.cache
+
+# Python Virtual Environments
+venv/
+backend/venv/
+.venv/
+env/
+
+# Node dependencies and build
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+
+# Python caches
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local database & uploaded analysis artifacts
+backend/reports.db
+backend/data/uploads/*
+backend/data/depth_maps/*
+backend/data/contours/*
+!backend/data/uploads/.gitkeep
+!backend/data/depth_maps/.gitkeep
+!backend/data/contours/.gitkeep
+
+# Training batch images
+runs/**/train_batch*.jpg
+runs/**/val_batch*.jpg
+runs/classify/runs/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
