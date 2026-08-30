@@ -7,7 +7,8 @@ import PastReports from './components/PastReports';
 import Dashboard from './components/Dashboard';
 import BatchInspection from './components/BatchInspection';
 import ModelDiagnostics from './components/ModelDiagnostics';
-import { Sliders, Sparkles, Play, Trash2, ArrowLeft } from 'lucide-react';
+import { API_BASE_URL, SAMPLE_DEMO_RESULT } from './config';
+import { Sliders, Sparkles, Play, Trash2, ArrowLeft, Eye } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -39,6 +40,13 @@ function App() {
     setError(null);
   };
 
+  const handleLoadDemo = () => {
+    setResults(SAMPLE_DEMO_RESULT);
+    setPreview(SAMPLE_DEMO_RESULT.image_path);
+    setError(null);
+    setCurrentView('inspection');
+  };
+
   const handleAnalyze = async () => {
     if (!file) return;
 
@@ -51,21 +59,24 @@ function App() {
     formData.append('colormap', colormap);
 
     try {
-      const response = await fetch('http://localhost:8000/analyze-image', {
+      const endpoint = `${API_BASE_URL}/analyze-image`;
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || 'Analysis failed. Please check server logs.');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Analysis failed with status ${response.status}.`);
       }
 
       const data = await response.json();
       setResults(data);
     } catch (err) {
       console.error(err);
-      setError(err.message || 'An unexpected error occurred during inference.');
+      setError(
+        `${err.message || 'An unexpected error occurred.'} (If running in cloud without local backend, click 'Explore Demo Scan' below).`
+      );
     } finally {
       setIsAnalyzing(false);
     }
@@ -79,7 +90,7 @@ function App() {
         <Header currentView={currentView} />
         
         <div className="p-6 md:p-8 w-full max-w-6xl mx-auto flex-1">
-          {currentView === 'dashboard' && <Dashboard setCurrentView={setCurrentView} />}
+          {currentView === 'dashboard' && <Dashboard setCurrentView={setCurrentView} onLoadDemo={handleLoadDemo} />}
           {currentView === 'batch' && <BatchInspection onSelectReport={(rep) => { setResults(rep); setCurrentView('inspection'); }} />}
           {currentView === 'reports' && <PastReports onSelectReport={(rep) => { setResults(rep); setCurrentView('inspection'); }} />}
           {currentView === 'diagnostics' && <ModelDiagnostics />}
@@ -88,9 +99,19 @@ function App() {
             <>
               {!preview && !results && (
                 <div className="mt-4 animate-in fade-in duration-300">
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-bold tracking-tight text-primary">New Surface Inspection</h2>
-                    <p className="text-xs text-muted mt-1">Upload a high-resolution concrete scan to classify anomalies, estimate depth, and render 3D topography.</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold tracking-tight text-primary">New Surface Inspection</h2>
+                      <p className="text-xs text-muted mt-1">Upload a high-resolution concrete scan to classify anomalies, estimate depth, and render 3D topography.</p>
+                    </div>
+
+                    <button
+                      onClick={handleLoadDemo}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 shadow-sm transition-all"
+                    >
+                      <Sparkles size={14} />
+                      <span>Explore Demo Scan</span>
+                    </button>
                   </div>
                   <UploadDropzone onDrop={handleFileDrop} />
                 </div>
@@ -153,8 +174,14 @@ function App() {
                     </div>
                     
                     {error && (
-                      <div className="w-full p-4 rounded-lg bg-rose-500/10 border border-rose-500/25 flex items-start gap-3 text-rose-400 text-xs">
-                        {error}
+                      <div className="w-full p-4 rounded-lg bg-rose-500/10 border border-rose-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-rose-400 text-xs">
+                        <div>{error}</div>
+                        <button
+                          onClick={handleLoadDemo}
+                          className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded font-semibold text-[11px] whitespace-nowrap transition-colors"
+                        >
+                          Load Demo Analysis
+                        </button>
                       </div>
                     )}
 
@@ -188,6 +215,14 @@ function App() {
                     >
                       <ArrowLeft size={13} />
                       <span>Start New Scan</span>
+                    </button>
+
+                    <button 
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 transition-colors"
+                      onClick={handleLoadDemo}
+                    >
+                      <Sparkles size={13} />
+                      <span>Reload Demo Benchmark</span>
                     </button>
                   </div>
                   <AnalysisResults results={results} />

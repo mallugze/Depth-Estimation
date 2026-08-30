@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Cpu, CheckCircle2, Zap, Layers, BarChart3, ShieldCheck, Activity, Database } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function ModelDiagnostics() {
   const [modelInfo, setModelInfo] = useState(null);
@@ -8,7 +9,7 @@ export default function ModelDiagnostics() {
   useEffect(() => {
     const fetchInfo = async () => {
       try {
-        const res = await fetch('http://localhost:8000/models/info');
+        const res = await fetch(`${API_BASE_URL}/models/info`);
         if (res.ok) {
           const data = await res.json();
           setModelInfo(data);

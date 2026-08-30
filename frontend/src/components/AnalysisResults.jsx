@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 import ImageSlider from './ImageSlider';
 import ThreeDViewer from './ThreeDViewer';
 import CrossSectionProfiler from './CrossSectionProfiler';
+import { getImageUrl } from '../config';
 import { 
   Download, Layers, Eye, Sliders, Activity, 
   ShieldCheck, AlertTriangle, Box, TrendingDown, Maximize2 
@@ -195,20 +196,20 @@ export default function AnalysisResults({ results }) {
           <div className="w-full">
             {activeTab === 'slider' && (
               <ImageSlider 
-                beforeImage={`http://localhost:8000${image_path}`} 
-                afterImage={`http://localhost:8000${depth_map_path}`} 
+                beforeImage={getImageUrl(image_path)} 
+                afterImage={getImageUrl(depth_map_path)} 
               />
             )}
 
             {activeTab === 'blend' && (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-border">
                 <img 
-                  src={`http://localhost:8000${image_path}`} 
+                  src={getImageUrl(image_path)} 
                   alt="Original" 
                   className="absolute inset-0 w-full h-full object-cover" 
                 />
                 <img 
-                  src={`http://localhost:8000${depth_map_path}`} 
+                  src={getImageUrl(depth_map_path)} 
                   alt="Depth Overlay" 
                   style={{ opacity: blendOpacity / 100 }}
                   className="absolute inset-0 w-full h-full object-cover transition-opacity duration-150 mix-blend-screen" 
@@ -222,7 +223,7 @@ export default function AnalysisResults({ results }) {
             {activeTab === 'contour' && (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-border">
                 <img 
-                  src={`http://localhost:8000${contour_path || image_path}`} 
+                  src={getImageUrl(contour_path || image_path)} 
                   alt="Crack Contours" 
                   className="w-full h-full object-cover" 
                 />

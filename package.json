@@ -1,0 +1,11 @@
+{
+  "name": "structurai-platform",
+  "version": "2.0.0",
+  "private": true,
+  "description": "AI-Powered Concrete Crack Detection & 3D Depth Topography Platform",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview"
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { UploadCloud, CheckCircle2, AlertTriangle, FileText, Download, Play, Trash2, ArrowRight } from 'lucide-react';
+import { API_BASE_URL, getImageUrl } from '../config';
 
 export default function BatchInspection({ onSelectReport }) {
   const [files, setFiles] = useState([]);
@@ -41,7 +42,7 @@ export default function BatchInspection({ onSelectReport }) {
 
     try {
       setProgress(40);
-      const res = await fetch('http://localhost:8000/analyze-batch', {
+      const res = await fetch(`${API_BASE_URL}/analyze-batch`, {
         method: 'POST',
         body: formData
       });
@@ -97,7 +98,7 @@ export default function BatchInspection({ onSelectReport }) {
 
           {batchResults && (
             <a 
-              href="http://localhost:8000/reports/export/csv"
+              href={`${API_BASE_URL}/reports/export/csv`}
               className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 shadow-sm transition-colors"
             >
               <Download size={14} />
@@ -241,12 +242,12 @@ export default function BatchInspection({ onSelectReport }) {
                   >
                     <div className="grid grid-cols-2 gap-2 h-28 rounded-lg overflow-hidden bg-black/40">
                       <img 
-                        src={`http://localhost:8000${report.image_path}`} 
+                        src={getImageUrl(report.image_path)} 
                         alt="Original" 
                         className="w-full h-full object-cover" 
                       />
                       <img 
-                        src={`http://localhost:8000${report.depth_map_path}`} 
+                        src={getImageUrl(report.depth_map_path)} 
                         alt="Depth" 
                         className="w-full h-full object-cover" 
                       />

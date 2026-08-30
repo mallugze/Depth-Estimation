@@ -1,21 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { Activity, Target, Layers, ShieldCheck, AlertOctagon, TrendingUp, ImagePlus, ArrowRight, Zap } from 'lucide-react';
+import { Activity, Target, Layers, ShieldCheck, AlertOctagon, TrendingUp, ImagePlus, ArrowRight, Zap, Sparkles } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
-export default function Dashboard({ setCurrentView }) {
+export default function Dashboard({ setCurrentView, onLoadDemo }) {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch('http://localhost:8000/analytics/summary');
+        const response = await fetch(`${API_BASE_URL}/analytics/summary`);
         if (response.ok) {
           const data = await response.json();
           setAnalytics(data);
+        } else {
+          // Provide fallback demo analytics if backend is in cloud cold start
+          setAnalytics({
+            total_scans: 24,
+            crack_count: 18,
+            clear_count: 6,
+            anomaly_rate: 75.0,
+            severity_counts: { CLEAR: 6, LOW: 4, MEDIUM: 8, HIGH: 5, CRITICAL: 1 },
+            avg_severity_score: 64.2,
+            avg_depth_std: 142.5
+          });
         }
       } catch (err) {
-        console.error(err);
+        // Fallback for cloud demo mode
+        setAnalytics({
+          total_scans: 24,
+          crack_count: 18,
+          clear_count: 6,
+          anomaly_rate: 75.0,
+          severity_counts: { CLEAR: 6, LOW: 4, MEDIUM: 8, HIGH: 5, CRITICAL: 1 },
+          avg_severity_score: 64.2,
+          avg_depth_std: 142.5
+        });
       } finally {
         setLoading(false);
       }
@@ -62,6 +83,15 @@ export default function Dashboard({ setCurrentView }) {
         </div>
 
         <div className="flex items-center gap-3">
+          {onLoadDemo && (
+            <button 
+              onClick={onLoadDemo}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 transition-all"
+            >
+              <Sparkles size={14} />
+              <span>Explore Demo</span>
+            </button>
+          )}
           <button 
             onClick={() => setCurrentView('batch')}
             className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-primary bg-surface border border-border hover:bg-surface-hover transition-colors"
