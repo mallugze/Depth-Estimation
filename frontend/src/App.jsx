@@ -8,7 +8,8 @@ import Dashboard from './components/Dashboard';
 import BatchInspection from './components/BatchInspection';
 import ModelDiagnostics from './components/ModelDiagnostics';
 import { API_BASE_URL, SAMPLE_DEMO_RESULT } from './config';
-import { Sliders, Sparkles, Play, Trash2, ArrowLeft, Eye } from 'lucide-react';
+import { analyzeImageClientSide } from './utils/clientAnalyzer';
+import { Sliders, Sparkles, Play, Trash2, ArrowLeft, Eye, Zap } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -53,30 +54,38 @@ function App() {
     setIsAnalyzing(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('structure_type', structureType);
-    formData.append('colormap', colormap);
+    // If backend URL is configured, try server inference
+    if (API_BASE_URL) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('structure_type', structureType);
+      formData.append('colormap', colormap);
 
-    try {
-      const endpoint = `${API_BASE_URL}/analyze-image`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        body: formData,
-      });
+      try {
+        const endpoint = `${API_BASE_URL}/analyze-image`;
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || `Analysis failed with status ${response.status}.`);
+        if (response.ok) {
+          const data = await response.json();
+          setResults(data);
+          setIsAnalyzing(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend unavailable, falling back to client-side engine...', err);
       }
+    }
 
-      const data = await response.json();
-      setResults(data);
+    // Fallback: Client-Side Deep Engine (Works seamlessly on Vercel)
+    try {
+      const clientData = await analyzeImageClientSide(file, structureType, colormap);
+      setResults(clientData);
     } catch (err) {
       console.error(err);
-      setError(
-        `${err.message || 'An unexpected error occurred.'} (If running in cloud without local backend, click 'Explore Demo Scan' below).`
-      );
+      setError('Analysis failed: ' + (err.message || 'Unable to process image.'));
     } finally {
       setIsAnalyzing(false);
     }

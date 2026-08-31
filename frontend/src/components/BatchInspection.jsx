@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { UploadCloud, CheckCircle2, AlertTriangle, FileText, Download, Play, Trash2, ArrowRight } from 'lucide-react';
 import { API_BASE_URL, getImageUrl } from '../config';
+import { analyzeImageClientSide } from '../utils/clientAnalyzer';
 
 export default function BatchInspection({ onSelectReport }) {
   const [files, setFiles] = useState([]);
@@ -34,27 +35,43 @@ export default function BatchInspection({ onSelectReport }) {
     setIsProcessing(true);
     setProgress(10);
 
-    const formData = new FormData();
-    files.forEach(f => {
-      formData.append('files', f);
-    });
-    formData.append('structure_type', structureType);
-
-    try {
-      setProgress(40);
-      const res = await fetch(`${API_BASE_URL}/analyze-batch`, {
-        method: 'POST',
-        body: formData
+    if (API_BASE_URL) {
+      const formData = new FormData();
+      files.forEach(f => {
+        formData.append('files', f);
       });
+      formData.append('structure_type', structureType);
 
-      if (!res.ok) {
-        throw new Error('Batch processing failed.');
+      try {
+        setProgress(30);
+        const res = await fetch(`${API_BASE_URL}/analyze-batch`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          setProgress(90);
+          const data = await res.json();
+          setBatchResults(data);
+          setProgress(100);
+          setIsProcessing(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend unavailable, processing batch client-side...', err);
       }
+    }
 
-      setProgress(90);
-      const data = await res.json();
-      setBatchResults(data);
-      setProgress(100);
+    // Client-side batch fallback
+    try {
+      const reports = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const rep = await analyzeImageClientSide(file, structureType, 'INFERNO');
+        reports.push(rep);
+        setProgress(Math.round(((i + 1) / files.length) * 100));
+      }
+      setBatchResults({ reports });
     } catch (err) {
       console.error(err);
       alert('Error during batch analysis: ' + err.message);
@@ -97,13 +114,24 @@ export default function BatchInspection({ onSelectReport }) {
           </select>
 
           {batchResults && (
-            <a 
-              href={`${API_BASE_URL}/reports/export/csv`}
+            <button 
+              onClick={() => {
+                const csvHeader = "ID,Filename,Classification,Confidence,Severity,Crack_Area_Pct\n";
+                const csvRows = batchResults.reports.map(r => 
+                  `${r.id},"${r.filename}",${r.prediction},${r.confidence},${r.severity},${r.crack_area_pct || 0}`
+                ).join("\n");
+                const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `StructurAI_Batch_${Date.now()}.csv`;
+                a.click();
+              }}
               className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 shadow-sm transition-colors"
             >
               <Download size={14} />
               Export CSV
-            </a>
+            </button>
           )}
         </div>
       </div>
