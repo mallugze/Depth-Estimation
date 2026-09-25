@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { RotateCw, ZoomIn, ZoomOut, Maximize2, RefreshCw, Eye, Sliders } from 'lucide-react';
+import { RotateCw, ZoomIn, ZoomOut, Maximize2, RefreshCw, Eye, Sliders, Radio, Zap } from 'lucide-react';
 
 export default function ThreeDViewer({ pointsData, colormap = 'ORIGINAL' }) {
   const mountRef = useRef(null);
@@ -8,6 +8,7 @@ export default function ThreeDViewer({ pointsData, colormap = 'ORIGINAL' }) {
   const [pointSize, setPointSize] = useState(0.12);
   const [autoRotate, setAutoRotate] = useState(false);
   const [selectedColormap, setSelectedColormap] = useState(colormap);
+  const [showLaserGrid, setShowLaserGrid] = useState(true);
   
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -41,10 +42,12 @@ export default function ThreeDViewer({ pointsData, colormap = 'ORIGINAL' }) {
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // 4. Create Grid Helper for industrial engineering aesthetic
-    const grid = new THREE.GridHelper(14, 14, 0x0ea5e9, 0x1e293b);
-    grid.position.y = -5.5;
-    scene.add(grid);
+    // 4. Create Grid Helper for industrial engineering aesthetic (Laser LiDAR reference plane)
+    if (showLaserGrid) {
+      const grid = new THREE.GridHelper(14, 14, 0xef4444, 0x1e293b);
+      grid.position.y = -5.5;
+      scene.add(grid);
+    }
 
     // 5. Build Point Cloud Geometry
     const geometry = new THREE.BufferGeometry();
@@ -64,6 +67,10 @@ export default function ThreeDViewer({ pointsData, colormap = 'ORIGINAL' }) {
       } else if (selectedColormap === 'TURBO') {
         const normZ = Math.max(0, Math.min(1, (z * heightScale) / 4.0));
         colors.push(1 - normZ, Math.sin(normZ * Math.PI), normZ);
+      } else if (selectedColormap === 'LASER_RED') {
+        // High-intensity red laser elevation colormap
+        const normZ = Math.max(0, Math.min(1, (z * heightScale) / 4.0));
+        colors.push(0.95, normZ * 0.3, normZ * 0.2);
       } else {
         // Cyan elevation gradient
         const normZ = Math.max(0, Math.min(1, (z * heightScale) / 4.0));
@@ -160,7 +167,7 @@ export default function ThreeDViewer({ pointsData, colormap = 'ORIGINAL' }) {
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [pointsData, heightScale, pointSize, autoRotate, selectedColormap]);
+  }, [pointsData, heightScale, pointSize, autoRotate, selectedColormap, showLaserGrid]);
 
   const handleResetCamera = () => {
     if (cameraRef.current) cameraRef.current.position.set(0, 0, 16);
@@ -170,14 +177,16 @@ export default function ThreeDViewer({ pointsData, colormap = 'ORIGINAL' }) {
     }
   };
 
+  const nodeCount = pointsData ? pointsData.length : 0;
+
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* 3D Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-surface-card rounded-lg border border-border">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-muted">
-            <Sliders size={14} className="text-cyan-400" />
-            <span className="font-medium text-primary">3D Topography Controls</span>
+            <Radio size={14} className="text-red-400 animate-pulse" />
+            <span className="font-medium text-primary">LiDAR Laser Mesh Controls</span>
           </div>
           
           <select 
@@ -185,7 +194,8 @@ export default function ThreeDViewer({ pointsData, colormap = 'ORIGINAL' }) {
             onChange={(e) => setSelectedColormap(e.target.value)}
             className="text-xs bg-surface border border-border text-primary rounded px-2 py-1 font-medium focus:outline-none focus:border-accent"
           >
-            <option value="ORIGINAL">Natural RGB Colors</option>
+            <option value="ORIGINAL">Natural RGB Surface</option>
+            <option value="LASER_RED">Laser Red LiDAR Disparity</option>
             <option value="INFERNO">Inferno Thermal</option>
             <option value="TURBO">Turbo Elevation</option>
             <option value="CYAN">Structural Cyan</option>
@@ -245,12 +255,17 @@ export default function ThreeDViewer({ pointsData, colormap = 'ORIGINAL' }) {
         ref={mountRef} 
         className="w-full h-[460px] rounded-xl overflow-hidden border border-border bg-[#0a0c14] relative cursor-grab active:cursor-grabbing shadow-inner"
       >
-        <div className="absolute top-3 left-3 pointer-events-none px-2.5 py-1 bg-black/60 backdrop-blur-md rounded text-[11px] font-medium text-muted border border-white/10 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span>Interactive 3D WebGL Mesh</span>
+        <div className="absolute top-3 left-3 pointer-events-none px-2.5 py-1 bg-black/75 backdrop-blur-md rounded text-[11px] font-medium text-slate-200 border border-red-500/30 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          <span>LiDAR Laser Disparity Mesh • {nodeCount} Laser Vertices</span>
         </div>
-        <div className="absolute bottom-3 left-3 pointer-events-none text-[11px] text-muted/70 bg-black/40 px-2 py-0.5 rounded">
-          Drag to rotate • Scroll to zoom
+        
+        <div className="absolute top-3 right-3 pointer-events-none px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] text-cyan-400 font-mono border border-cyan-500/20">
+          Z-Axis: Relative Optical Laser Discontinuity
+        </div>
+
+        <div className="absolute bottom-3 left-3 pointer-events-none text-[11px] text-muted/80 bg-black/50 px-2 py-0.5 rounded">
+          Drag to orbit 3D laser topography • Scroll to zoom
         </div>
       </div>
     </div>

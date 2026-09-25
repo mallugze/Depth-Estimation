@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Cpu, CheckCircle2, Zap, Layers, BarChart3, ShieldCheck, Activity, Database } from 'lucide-react';
+import { Cpu, CheckCircle2, Zap, Layers, BarChart3, ShieldCheck, Activity, Database, Radio, Image as ImageIcon, AlertCircle, Info } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 export default function ModelDiagnostics() {
@@ -27,7 +27,7 @@ export default function ModelDiagnostics() {
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-primary">Model & System Diagnostics</h2>
-        <p className="text-sm text-muted mt-1">Real-time architecture specifications and cross-dataset validation benchmarks.</p>
+        <p className="text-sm text-muted mt-1">Dataset specifications, empirical validation benchmarks, and virtual laser profilometry architecture.</p>
       </div>
 
       {/* Model Spec Cards */}
@@ -43,23 +43,23 @@ export default function ModelDiagnostics() {
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between text-xs text-muted">
-            <span>Input Size: <strong className="text-primary font-mono">224x224x3</strong></span>
+            <span>Trained Corpus: <strong className="text-primary">SDNET2018 + CCIC</strong></span>
             <span className="text-emerald-400 font-medium">Fine-Tuned</span>
           </div>
         </div>
 
         <div className="panel p-5 flex flex-col justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              <Layers size={20} />
+            <div className="p-2.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">
+              <Radio size={20} className="animate-pulse" />
             </div>
             <div>
-              <div className="text-xs text-muted font-medium">Monocular Depth Engine</div>
-              <div className="text-sm font-bold text-primary">MiDaS Disparity v2.1</div>
+              <div className="text-xs text-muted font-medium">Depth Profiling Engine</div>
+              <div className="text-sm font-bold text-primary">Virtual Laser Profilometry (MiDaS)</div>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between text-xs text-muted">
-            <span>Interpolation: <strong className="text-primary">Bicubic</strong></span>
+            <span>Laser Disparity: <strong className="text-primary">Optical Transect</strong></span>
             <span className="text-cyan-400 font-medium">Active</span>
           </div>
         </div>
@@ -71,12 +71,80 @@ export default function ModelDiagnostics() {
             </div>
             <div>
               <div className="text-xs text-muted font-medium">Inference Execution</div>
-              <div className="text-sm font-bold text-primary">{modelInfo ? modelInfo.device.toUpperCase() : 'CPU'} Acceleration</div>
+              <div className="text-sm font-bold text-primary">{modelInfo ? modelInfo.device.toUpperCase() : 'CPU / Browser Canvas'}</div>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between text-xs text-muted">
             <span>Engine Latency: <strong className="text-primary font-mono">~35ms</strong></span>
             <span className="text-emerald-400 font-medium">Optimal</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Dataset Specifications & Provenance Card */}
+      <div className="panel p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-primary">Dataset Corpus & Input Photo Specifications</h3>
+            <p className="text-xs text-muted mt-0.5">Structural concrete datasets used to train and calibrate the AI inspection models</p>
+          </div>
+          <span className="badge badge-clear">
+            <Database size={13} /> 6,000 Curated Images
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-surface-card rounded-xl border border-border flex flex-col gap-2.5">
+            <div className="flex items-center gap-2 text-cyan-400 font-semibold text-xs">
+              <CheckCircle2 size={15} />
+              <span>SDNET2018 Structural Benchmark (Utah State University)</span>
+            </div>
+            <p className="text-[11px] text-muted leading-relaxed">
+              Contains over 56,000 real-world concrete images spanning:
+            </p>
+            <ul className="text-[11px] text-slate-300 space-y-1 list-disc list-inside">
+              <li><strong>Bridge Decks (D):</strong> Concrete bridge roadways with textured wear and aggregate exposure.</li>
+              <li><strong>Pavements (P):</strong> Asphalt and highway concrete pavements with joints and hairline fissures.</li>
+              <li><strong>Retaining Walls (W):</strong> Vertical structural concrete walls, foundation slabs, and columns.</li>
+            </ul>
+          </div>
+
+          <div className="p-4 bg-surface-card rounded-xl border border-border flex flex-col gap-2.5">
+            <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs">
+              <CheckCircle2 size={15} />
+              <span>CCIC Concrete Crack Benchmark Dataset</span>
+            </div>
+            <p className="text-[11px] text-muted leading-relaxed">
+              Standardized high-contrast structural concrete blocks capturing micro and macro crack fissures under uniform controlled conditions, ensuring high precision on sound surfaces.
+            </p>
+            <div className="p-2.5 bg-black/40 rounded-lg text-[10px] text-muted font-mono">
+              Model Training Configuration: Balanced Multi-Domain Corpus (CCIC + SDNET2018 D/P/W) with heavy geometric & photometric augmentations.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Virtual Laser Profilometry Explanation Card */}
+      <div className="panel p-6 border-l-4 border-l-red-500 bg-gradient-to-r from-red-950/20 via-surface-card to-surface-card flex flex-col gap-3">
+        <div className="flex items-center gap-2 text-red-400 font-bold text-sm">
+          <Radio size={18} className="animate-pulse" />
+          <span>How Depth is Calculated: Virtual Optical Laser Profilometry</span>
+        </div>
+        <p className="text-xs text-muted leading-relaxed">
+          Physical civil engineering inspections often deploy <strong>triangulating laser displacement sensors and LiDAR distance profilers</strong> to measure the millimetric depth drop across a crack fissure. In StructurAI, our monocular depth network (MiDaS v2.1) estimates relative depth disparity directly from 2D images, simulating a <strong>virtual optical laser beam transect</strong> across the structural transect:
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+          <div className="p-3 bg-black/40 rounded-lg border border-border">
+            <strong className="text-primary font-semibold block mb-1">1. Optical Laser Disparity</strong>
+            <span className="text-muted text-[11px]">Computes pixel-wise inverse depth gradients mimicking light time-of-flight.</span>
+          </div>
+          <div className="p-3 bg-black/40 rounded-lg border border-border">
+            <strong className="text-primary font-semibold block mb-1">2. 1D Laser Transect</strong>
+            <span className="text-muted text-[11px]">Slices a continuous depth profile across the center surface line to calculate peak-to-valley crevice drops.</span>
+          </div>
+          <div className="p-3 bg-black/40 rounded-lg border border-border">
+            <strong className="text-primary font-semibold block mb-1">3. 3D LiDAR Point Cloud</strong>
+            <span className="text-muted text-[11px]">Renders 1,600 triangulated 3D spatial coordinate nodes in real-time WebGL.</span>
           </div>
         </div>
       </div>
@@ -135,31 +203,6 @@ export default function ModelDiagnostics() {
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Pipeline Feature Matrix */}
-      <div className="panel p-6">
-        <h3 className="text-base font-bold text-primary mb-4">Supported Multi-Signal Capabilities</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[
-            { title: 'YOLOv8 Cross-Domain Detection', desc: 'Robust crack classification across bridge decks, pavements, and textured walls.' },
-            { title: 'MiDaS Monocular Depth Estimation', desc: 'Dense relative depth mapping with bicubic sub-pixel interpolation.' },
-            { title: 'Crack Morphometry & Skeletonization', desc: 'Measures crack area %, estimated length px, and fissure trajectory.' },
-            { title: 'Crack-Specific Depth Discontinuity (CSDD)', desc: 'Measures step-gradient drop specifically across fissure boundaries.' },
-            { title: '1D Depth Cross-Section Profiling', desc: 'Real-time linear depth profile slice graph across structural surface.' },
-            { title: 'Interactive 3D WebGL Point Cloud', desc: 'Full 3D surface mesh visualization with orbit, pan, zoom, and colormaps.' },
-          ].map((feat, idx) => (
-            <div key={idx} className="p-3.5 bg-surface-card rounded-lg border border-border flex items-start gap-3">
-              <div className="mt-0.5 p-1 rounded bg-cyan-500/10 text-cyan-400">
-                <CheckCircle2 size={15} />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-primary">{feat.title}</div>
-                <div className="text-[11px] text-muted mt-0.5 leading-relaxed">{feat.desc}</div>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

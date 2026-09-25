@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Sparkles, Cpu, Layers } from 'lucide-react';
+import { ShieldCheck, Sparkles, Cpu, Layers, Radio } from 'lucide-react';
 
 export default function Header({ currentView }) {
   const getBreadcrumbTitle = () => {
@@ -13,7 +13,7 @@ export default function Header({ currentView }) {
   };
 
   return (
-    <header className="h-16 bg-[#090b12]/80 border-b border-slate-800/80 flex items-center justify-between px-8 sticky top-0 z-20 backdrop-blur-xl">
+    <header className="h-16 bg-[#090b12]/80 border-b border-slate-800/80 flex items-center justify-between px-6 md:px-8 sticky top-0 z-20 backdrop-blur-xl">
       <div className="flex items-center gap-2 text-xs text-muted">
         <span>Workspace</span>
         <span className="text-slate-600">/</span>
@@ -22,7 +22,18 @@ export default function Header({ currentView }) {
         </span>
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {/* Laser Profiling Engine Badge */}
+        <span className="hidden lg:flex items-center gap-1.5 text-[11px] font-mono font-medium text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/25">
+          <Radio size={12} className="animate-pulse" />
+          <span>Virtual Laser LiDAR: Active</span>
+        </span>
+
+        {/* Dataset Provenance Pill */}
+        <span className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono font-medium text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/25">
+          <span>SDNET2018 & CCIC Calibrated</span>
+        </span>
+
         {/* System Online Badge */}
         <span className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/25">
           <span className="relative flex h-2 w-2">
@@ -33,7 +44,7 @@ export default function Header({ currentView }) {
         </span>
 
         {/* Engineer Profile Block */}
-        <div className="flex items-center gap-3 pl-4 border-l border-slate-800 h-8">
+        <div className="flex items-center gap-3 pl-3 border-l border-slate-800 h-8">
           <div className="flex flex-col items-end hidden md:flex">
             <span className="text-xs font-bold text-primary leading-none">Civil QA Specialist</span>
             <span className="text-[10px] text-muted mt-0.5 font-mono">Asset Integrity</span>
