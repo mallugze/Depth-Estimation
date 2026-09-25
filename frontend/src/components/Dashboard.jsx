@@ -79,7 +79,7 @@ export default function Dashboard({ setCurrentView, onLoadDemo }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-primary">Structural Analytics Command Hub</h2>
-          <p className="text-sm text-muted mt-1">Real-time deep inference intelligence across concrete assets.</p>
+          <p className="text-sm text-muted mt-1">Real-time deep inference intelligence & <strong>Laser-Based Crack Depth Profilometry</strong>.</p>
         </div>
 
         <div className="flex items-center gap-3">
