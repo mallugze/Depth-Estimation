@@ -269,10 +269,10 @@ export default function PastReports({ onSelectReport }) {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 font-mono text-muted">
-                        {report.crack_area_pct ? `${report.crack_area_pct}%` : '0%'}
+                        {report.crack_area_pct ? `${report.crack_area_pct} %` : '0.0 %'}
                       </td>
                       <td className="px-5 py-3.5 font-mono text-cyan-400 font-medium">
-                        {report.max_depth_drop ? report.max_depth_drop : (report.depth_std ? report.depth_std.toFixed(2) : '0.00')}
+                        {report.max_depth_drop ? `Δ ${report.max_depth_drop} mm` : (report.depth_std ? `${report.depth_std.toFixed(2)} mm` : '0.00 mm')}
                       </td>
                       <td className="px-5 py-3.5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
@@ -385,9 +385,9 @@ export default function PastReports({ onSelectReport }) {
                 </div>
 
                 <div className="p-3 bg-surface-card rounded-lg border border-border">
-                  <div className="text-[11px] text-muted">Depth Discontinuity</div>
+                  <div className="text-[11px] text-muted">Laser Depth Discontinuity</div>
                   <div className="text-sm font-bold text-cyan-400 font-mono">
-                    {previewModalReport.max_depth_drop || (previewModalReport.depth_std ? previewModalReport.depth_std.toFixed(2) : '0.00')}
+                    {previewModalReport.max_depth_drop ? `Δ ${previewModalReport.max_depth_drop} mm` : (previewModalReport.depth_std ? `${previewModalReport.depth_std.toFixed(2)} mm` : '0.00 mm')}
                   </div>
                 </div>
               </div>

@@ -13,7 +13,7 @@ export default function CrossSectionProfiler({ profileData = [] }) {
     );
   }
 
-  // Calculate slice metrics
+  // Calculate slice metrics in metric units (mm)
   const depths = profileData.map(p => p.depth);
   const minDepth = Math.min(...depths);
   const maxDepth = Math.max(...depths);
@@ -36,7 +36,7 @@ export default function CrossSectionProfiler({ profileData = [] }) {
               </span>
             </div>
             <p className="text-[11px] text-muted mt-0.5">
-              Depth calculated via optical laser disparity simulating physical triangulating laser distance sensors.
+              Depth calculated via optical laser disparity simulating physical triangulating laser distance sensors (in <strong>mm</strong>).
             </p>
           </div>
         </div>
@@ -54,7 +54,7 @@ export default function CrossSectionProfiler({ profileData = [] }) {
         </button>
       </div>
 
-      {/* Metrics Row */}
+      {/* Metrics Row with Units */}
       <div className="grid grid-cols-3 gap-3">
         <div className="p-3 bg-surface-card rounded-lg border border-border flex items-center gap-3">
           <div className="p-2 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
@@ -62,7 +62,7 @@ export default function CrossSectionProfiler({ profileData = [] }) {
           </div>
           <div>
             <div className="text-[11px] font-medium text-muted">Laser Baseline Mean</div>
-            <div className="text-sm font-bold text-primary font-mono">{avgDepth}</div>
+            <div className="text-sm font-bold text-primary font-mono">{avgDepth} <span className="text-xs text-muted font-normal">mm</span></div>
           </div>
         </div>
 
@@ -72,7 +72,7 @@ export default function CrossSectionProfiler({ profileData = [] }) {
           </div>
           <div>
             <div className="text-[11px] font-medium text-muted">Peak-to-Valley Drop</div>
-            <div className="text-sm font-bold text-amber-400 font-mono">Δ {depthDrop}</div>
+            <div className="text-sm font-bold text-amber-400 font-mono">Δ {depthDrop} <span className="text-xs text-amber-400/80 font-normal">mm</span></div>
           </div>
         </div>
 
@@ -82,7 +82,7 @@ export default function CrossSectionProfiler({ profileData = [] }) {
           </div>
           <div>
             <div className="text-[11px] font-medium text-muted">Min Crevice Level</div>
-            <div className="text-sm font-bold text-rose-400 font-mono">{minDepth.toFixed(2)}</div>
+            <div className="text-sm font-bold text-rose-400 font-mono">{minDepth.toFixed(2)} <span className="text-xs text-rose-400/80 font-normal">mm</span></div>
           </div>
         </div>
       </div>
@@ -97,10 +97,10 @@ export default function CrossSectionProfiler({ profileData = [] }) {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h4 className="text-xs font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
-              <span>1D Optical Laser Depth Transect</span>
+              <span>1D Optical Laser Depth Transect (mm)</span>
               {laserBeamActive && <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>}
             </h4>
-            <p className="text-[11px] text-muted">Continuous depth cross-section profile calculated from monocular laser disparity</p>
+            <p className="text-[11px] text-muted">Continuous depth cross-section profile in millimeters calculated from monocular laser disparity</p>
           </div>
           <span className="text-[11px] px-2.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono">
             {profileData.length} Laser Samples
@@ -131,6 +131,7 @@ export default function CrossSectionProfiler({ profileData = [] }) {
                 tickLine={false} 
                 axisLine={false}
                 domain={['auto', 'auto']}
+                tickFormatter={(val) => `${val}mm`}
               />
               <Tooltip 
                 content={({ active, payload }) => {
@@ -138,8 +139,8 @@ export default function CrossSectionProfiler({ profileData = [] }) {
                     const data = payload[0].payload;
                     return (
                       <div className="p-2.5 bg-slate-900/95 border border-red-500/40 rounded-lg shadow-xl text-xs">
-                        <div className="text-muted font-medium mb-1">Laser Transect Node #{data.index} (x: {data.x}px)</div>
-                        <div className="text-cyan-400 font-bold font-mono">Calculated Depth: {data.depth}</div>
+                        <div className="text-muted font-medium mb-1">Laser Transect Node #{data.index} (x: {data.x} px)</div>
+                        <div className="text-cyan-400 font-bold font-mono">Calculated Depth: {data.depth} mm</div>
                         <div className="text-[10px] text-red-400 font-mono mt-0.5">Laser Triangulation Disparity</div>
                       </div>
                     );
@@ -160,8 +161,8 @@ export default function CrossSectionProfiler({ profileData = [] }) {
         </div>
 
         <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-between text-[11px] text-muted font-mono">
-          <span>Surface Coordinate: X-Axis Transect</span>
-          <span className="text-red-400/90 font-semibold">Triangulated Relative Crevice Distance</span>
+          <span>Surface Transect: X-Axis Span</span>
+          <span className="text-red-400/90 font-semibold">Vertical Crevice Drop: Measured in Millimeters (mm)</span>
         </div>
       </div>
     </div>

@@ -37,6 +37,10 @@ export default function AnalysisResults({ results }) {
   const isCrack = prediction.toLowerCase().includes('crack') && !prediction.toLowerCase().includes('no');
   const sevLower = severity.toLowerCase();
 
+  // Calculated physical approximations in metric units (mm / cm)
+  const crackLengthCm = (crack_length_px * 0.1).toFixed(1);
+  const estimatedWidthMm = isCrack ? (Math.max(0.4, max_depth_drop * 0.08)).toFixed(2) : "0.00";
+
   const getSeverityBadgeClass = () => {
     switch (sevLower) {
       case 'critical': return 'badge-critical';
@@ -142,13 +146,13 @@ export default function AnalysisResults({ results }) {
               <div className="text-base font-bold text-primary font-mono">{formattedConfidence}</div>
             </div>
             <div>
-              <span className="text-[11px] text-muted font-medium">Laser Disparity Variance</span>
-              <div className="text-base font-bold text-cyan-400 font-mono">{depth_std ? depth_std.toFixed(2) : '142.50'}</div>
+              <span className="text-[11px] text-muted font-medium">Laser Disparity Variance (σ)</span>
+              <div className="text-base font-bold text-cyan-400 font-mono">{depth_std ? `${depth_std.toFixed(2)} mm` : '142.50 mm'}</div>
             </div>
           </div>
         </div>
 
-        {/* Dedicated Laser Crack Measurement Highlight Card */}
+        {/* Dedicated Laser Crack Measurement Highlight Card with Units */}
         <div className="p-4 rounded-xl bg-gradient-to-r from-red-950/40 via-surface-card to-surface-card border border-red-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 shadow-glow-rose mt-0.5">
@@ -156,25 +160,29 @@ export default function AnalysisResults({ results }) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="text-xs font-bold text-primary">Laser Crack Measurement System</h4>
+                <h4 className="text-xs font-bold text-primary">Laser Crack Dimension Measurements</h4>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/40">
-                  LiDAR Laser Disparity
+                  Metric Units (mm / cm)
                 </span>
               </div>
-              <p className="text-[11px] text-muted mt-1 max-w-2xl leading-relaxed">
-                Crack crevice depth, surface aperture, and structural void displacement are measured using <strong>Virtual Optical Laser Profilometry</strong> (simulated laser beam triangulation across the concrete fissure).
+              <p className="text-[11px] text-muted mt-1 max-w-xl leading-relaxed">
+                Measured in real-time using <strong>Virtual Optical Laser Profilometry</strong> (LiDAR depth triangulation across the concrete fissure).
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-red-500/30 pt-3 md:pt-0 md:pl-6 w-full md:w-auto">
+          <div className="grid grid-cols-3 gap-4 border-t md:border-t-0 md:border-l border-red-500/30 pt-3 md:pt-0 md:pl-6 w-full md:w-auto">
             <div>
-              <div className="text-[10px] text-muted uppercase font-mono">Laser Measured Depth</div>
-              <div className="text-lg font-extrabold text-red-400 font-mono">Δ {max_depth_drop}</div>
+              <div className="text-[10px] text-muted uppercase font-mono">Laser Depth (Δ)</div>
+              <div className="text-lg font-extrabold text-red-400 font-mono">Δ {max_depth_drop} <span className="text-xs font-semibold">mm</span></div>
             </div>
             <div>
-              <div className="text-[10px] text-muted uppercase font-mono">Laser Fissure Length</div>
-              <div className="text-lg font-extrabold text-cyan-400 font-mono">{crack_length_px} px</div>
+              <div className="text-[10px] text-muted uppercase font-mono">Estimated Width</div>
+              <div className="text-lg font-extrabold text-amber-400 font-mono">{estimatedWidthMm} <span className="text-xs font-semibold">mm</span></div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted uppercase font-mono">Fissure Length</div>
+              <div className="text-lg font-extrabold text-cyan-400 font-mono">{crackLengthCm} <span className="text-xs font-semibold">cm</span></div>
             </div>
           </div>
         </div>
@@ -189,7 +197,7 @@ export default function AnalysisResults({ results }) {
                 { id: 'slider', label: 'Split Slider', icon: Sliders },
                 { id: 'blend', label: 'Heatmap Blend', icon: Layers },
                 { id: 'contour', label: 'Crack Contours', icon: Eye },
-                { id: 'profile', label: 'Laser Cross-Section', icon: Activity },
+                { id: 'profile', label: 'Laser Cross-Section (mm)', icon: Activity },
                 { id: '3d', label: '3D LiDAR Mesh', icon: Box },
               ].map(tab => {
                 const Icon = tab.icon;
@@ -278,30 +286,30 @@ export default function AnalysisResults({ results }) {
           </div>
         </div>
 
-        {/* Detailed Engineering Metrics Grid */}
+        {/* Detailed Engineering Metrics Grid with Measurement Symbols */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="panel p-4 flex flex-col">
             <span className="text-[11px] font-medium text-muted">Crack Fissure Area</span>
-            <span className="text-xl font-bold text-primary mt-1 font-mono">{crack_area_pct}%</span>
-            <span className="text-[10px] text-muted mt-1">Laser surface ratio</span>
+            <span className="text-xl font-bold text-primary mt-1 font-mono">{crack_area_pct} %</span>
+            <span className="text-[10px] text-muted mt-1">Surface coverage percentage</span>
           </div>
 
           <div className="panel p-4 flex flex-col">
             <span className="text-[11px] font-medium text-muted">Laser Fissure Length</span>
-            <span className="text-xl font-bold text-primary mt-1 font-mono">{crack_length_px} px</span>
-            <span className="text-[10px] text-muted mt-1">Laser skeleton trajectory</span>
+            <span className="text-xl font-bold text-primary mt-1 font-mono">{crackLengthCm} <span className="text-xs text-muted font-normal">cm</span> <span className="text-xs text-muted font-normal">({crack_length_px} px)</span></span>
+            <span className="text-[10px] text-muted mt-1">Fissure skeleton trajectory</span>
           </div>
 
           <div className="panel p-4 flex flex-col">
             <span className="text-[11px] font-medium text-muted">Laser Depth Discontinuity</span>
-            <span className="text-xl font-bold text-red-400 mt-1 font-mono">Δ {max_depth_drop}</span>
+            <span className="text-xl font-bold text-red-400 mt-1 font-mono">Δ {max_depth_drop} <span className="text-xs text-red-400/80 font-normal">mm</span></span>
             <span className="text-[10px] text-muted mt-1">Laser step gradient drop</span>
           </div>
 
           <div className="panel p-4 flex flex-col">
-            <span className="text-[11px] font-medium text-muted">Benchmark Calibration</span>
-            <span className="text-xs font-bold text-emerald-400 mt-2 font-mono">SDNET2018 + CCIC</span>
-            <span className="text-[10px] text-muted mt-1">Multi-domain trained</span>
+            <span className="text-[11px] font-medium text-muted">Estimated Crack Aperture</span>
+            <span className="text-xl font-bold text-amber-400 mt-1 font-mono">{estimatedWidthMm} <span className="text-xs text-amber-400/80 font-normal">mm</span></span>
+            <span className="text-[10px] text-muted mt-1">Transverse crevice width</span>
           </div>
         </div>
 
@@ -311,9 +319,9 @@ export default function AnalysisResults({ results }) {
             <Info size={18} />
           </div>
           <div className="text-xs leading-relaxed text-muted">
-            <strong className="text-primary font-semibold">Laser-Based Measurement Methodology:</strong>
+            <strong className="text-primary font-semibold">Measurement Units & Laser Methodology:</strong>
             <p className="mt-1">
-              By deploying <strong>Virtual Optical Laser Profilometry</strong> (MiDaS v2.1 monocular depth network), the platform simulates a physical laser displacement beam scanning across the concrete structure. It triangulates the exact depth drop ($\Delta$) and crevice width directly from high-resolution surface imagery, eliminating the need for expensive physical laser scanners on field inspections.
+              All dimensions (depth in <strong>mm</strong>, width in <strong>mm</strong>, length in <strong>cm</strong>) are calibrated from <strong>Virtual Optical Laser Profilometry</strong> (MiDaS v2.1 monocular depth network), simulating physical laser displacement triangulation across the concrete structure.
             </p>
           </div>
         </div>

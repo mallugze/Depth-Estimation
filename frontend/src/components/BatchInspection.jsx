@@ -293,6 +293,10 @@ export default function BatchInspection({ onSelectReport }) {
 
                       <div className="flex items-center justify-between text-xs text-muted">
                         <span>Confidence: <strong className="text-primary">{(report.confidence * 100).toFixed(1)}%</strong></span>
+                        <span className="font-mono text-cyan-400 font-medium">Δ {report.max_depth_drop || '0.0'} mm</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-muted pt-1 border-t border-border/50">
+                        <span>Area: <strong className="text-primary">{report.crack_area_pct || 0}%</strong></span>
                         <span className={`badge ${
                           sevLower === 'critical' ? 'badge-critical' :
                           sevLower === 'high' ? 'badge-high' :
