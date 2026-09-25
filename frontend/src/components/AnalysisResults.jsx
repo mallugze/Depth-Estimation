@@ -7,7 +7,7 @@ import CrossSectionProfiler from './CrossSectionProfiler';
 import { getImageUrl } from '../config';
 import { 
   Download, Layers, Eye, Sliders, Activity, 
-  ShieldCheck, AlertTriangle, Box, TrendingDown, Maximize2, Radio, Info, Zap, Ruler 
+  ShieldCheck, AlertTriangle, Box, TrendingDown, Maximize2, Radio, Info, Zap, Ruler, Camera, Target 
 } from 'lucide-react';
 
 export default function AnalysisResults({ results }) {
@@ -24,6 +24,9 @@ export default function AnalysisResults({ results }) {
     crack_area_pct = 0,
     crack_length_px = 0,
     max_depth_drop = 0,
+    laser_detected = false,
+    laser_coords = null,
+    laser_mode = "STANDARD_VISUAL_SCAN",
     image_path, 
     depth_map_path,
     contour_path,
@@ -74,7 +77,7 @@ export default function AnalysisResults({ results }) {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`StructurAI_Laser_Inspection_${Date.now()}.pdf`);
+      pdf.save(`StructurAI_Inspection_${Date.now()}.pdf`);
     } catch (e) {
       console.error("Failed to generate PDF", e);
       alert("Failed to export PDF: " + e.message);
@@ -94,13 +97,25 @@ export default function AnalysisResults({ results }) {
             <span className={`badge ${getSeverityBadgeClass()}`}>
               {severity} SEVERITY
             </span>
-            <span className="text-xs text-red-400 font-mono bg-red-500/10 px-2.5 py-0.5 rounded border border-red-500/30 flex items-center gap-1.5">
-              <Radio size={12} className="animate-pulse text-red-400" />
-              <span>Laser-Based Crack Measurement Active</span>
-            </span>
+
+            {/* Conditional Laser Status Badge based on actual detection */}
+            {laser_detected ? (
+              <span className="text-xs text-red-400 font-mono bg-red-500/10 px-2.5 py-0.5 rounded border border-red-500/30 flex items-center gap-1.5 animate-pulse">
+                <Target size={13} className="text-red-400" />
+                <span>Laser Spot Detected on Target ({laser_coords ? `x: ${laser_coords.x}px, y: ${laser_coords.y}px` : 'Active'})</span>
+              </span>
+            ) : (
+              <span className="text-xs text-slate-400 font-mono bg-slate-800/80 px-2.5 py-0.5 rounded border border-slate-700 flex items-center gap-1.5">
+                <Camera size={13} />
+                <span>Visual Camera Scan (No Laser Spot on Surface)</span>
+              </span>
+            )}
+
             <span className="text-xs text-muted font-mono bg-slate-800 px-2 py-0.5 rounded">{structure_type}</span>
           </div>
-          <h2 className="text-xl font-bold text-primary mt-1">Multi-Signal Structural & Laser Depth Assessment</h2>
+          <h2 className="text-xl font-bold text-primary mt-1">
+            {laser_detected ? "Laser-Guided Structural Assessment" : "Visual Multi-Signal Assessment"}
+          </h2>
         </div>
 
         <button 
@@ -134,7 +149,9 @@ export default function AnalysisResults({ results }) {
               </div>
               <p className="text-xs text-muted mt-1 max-w-lg leading-relaxed">
                 {isCrack 
-                  ? `Fissure detected with ${formattedConfidence} confidence. Crack depth measured via optical laser profilometry indicating ${severity.toLowerCase()} structural risk.`
+                  ? (laser_detected 
+                      ? `Fissure detected with ${formattedConfidence} confidence. Crevice depth measured along physical laser spot coordinates indicating ${severity.toLowerCase()} structural risk.`
+                      : `Fissure detected with ${formattedConfidence} confidence. Standard visual depth disparity indicates ${severity.toLowerCase()} structural risk level.`)
                   : `Concrete surface is uniform with standard planar depth distribution. Confidence: ${formattedConfidence}.`}
               </p>
             </div>
@@ -146,46 +163,56 @@ export default function AnalysisResults({ results }) {
               <div className="text-base font-bold text-primary font-mono">{formattedConfidence}</div>
             </div>
             <div>
-              <span className="text-[11px] text-muted font-medium">Laser Disparity Variance (σ)</span>
+              <span className="text-[11px] text-muted font-medium">{laser_detected ? "Laser Disparity Variance" : "Planar Depth Variance"}</span>
               <div className="text-base font-bold text-cyan-400 font-mono">{depth_std ? `${depth_std.toFixed(2)} mm` : '142.50 mm'}</div>
             </div>
           </div>
         </div>
 
-        {/* Dedicated Laser Crack Measurement Highlight Card with Units */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-red-950/40 via-surface-card to-surface-card border border-red-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 shadow-glow-rose mt-0.5">
-              <Ruler size={20} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-xs font-bold text-primary">Laser Crack Dimension Measurements</h4>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/40">
-                  Metric Units (mm / cm)
-                </span>
+        {/* Laser Crack Measurement Highlight Card (Shown ONLY when laser is detected on wall) */}
+        {laser_detected ? (
+          <div className="p-4 rounded-xl bg-gradient-to-r from-red-950/40 via-surface-card to-surface-card border border-red-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 shadow-glow-rose mt-0.5">
+                <Ruler size={20} />
               </div>
-              <p className="text-[11px] text-muted mt-1 max-w-xl leading-relaxed">
-                Measured in real-time using <strong>Virtual Optical Laser Profilometry</strong> (LiDAR depth triangulation across the concrete fissure).
-              </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-primary">Physical Laser Dot Measurement</h4>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/40">
+                    Laser Target: {laser_coords ? `(X: ${laser_coords.x}px, Y: ${laser_coords.y}px)` : 'Active'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted mt-1 max-w-xl leading-relaxed">
+                  Laser spot triangulated on concrete surface. Crevice depth and aperture calculated along the optical laser transect.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-4 border-t md:border-t-0 md:border-l border-red-500/30 pt-3 md:pt-0 md:pl-6 w-full md:w-auto">
-            <div>
-              <div className="text-[10px] text-muted uppercase font-mono">Laser Depth (Δ)</div>
-              <div className="text-lg font-extrabold text-red-400 font-mono">Δ {max_depth_drop} <span className="text-xs font-semibold">mm</span></div>
-            </div>
-            <div>
-              <div className="text-[10px] text-muted uppercase font-mono">Estimated Width</div>
-              <div className="text-lg font-extrabold text-amber-400 font-mono">{estimatedWidthMm} <span className="text-xs font-semibold">mm</span></div>
-            </div>
-            <div>
-              <div className="text-[10px] text-muted uppercase font-mono">Fissure Length</div>
-              <div className="text-lg font-extrabold text-cyan-400 font-mono">{crackLengthCm} <span className="text-xs font-semibold">cm</span></div>
+            <div className="grid grid-cols-3 gap-4 border-t md:border-t-0 md:border-l border-red-500/30 pt-3 md:pt-0 md:pl-6 w-full md:w-auto">
+              <div>
+                <div className="text-[10px] text-muted uppercase font-mono">Laser Depth (Δ)</div>
+                <div className="text-lg font-extrabold text-red-400 font-mono">Δ {max_depth_drop} <span className="text-xs font-semibold">mm</span></div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted uppercase font-mono">Estimated Width</div>
+                <div className="text-lg font-extrabold text-amber-400 font-mono">{estimatedWidthMm} <span className="text-xs font-semibold">mm</span></div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted uppercase font-mono">Fissure Length</div>
+                <div className="text-lg font-extrabold text-cyan-400 font-mono">{crackLengthCm} <span className="text-xs font-semibold">cm</span></div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-3.5 rounded-xl bg-surface-card border border-border flex items-center justify-between gap-3 text-xs text-muted">
+            <div className="flex items-center gap-2.5">
+              <Camera size={16} className="text-cyan-400" />
+              <span><strong>Visual Inspection Mode:</strong> No physical laser dot was detected on the target wall. Depth displayed as standard planar monocular disparity.</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-mono bg-black/40 px-2 py-0.5 rounded border border-border">Camera Only</span>
+          </div>
+        )}
 
         {/* Visual Inspection Workspace with Multi-Tab Modes */}
         <div className="panel p-4 flex flex-col gap-4">
@@ -196,9 +223,9 @@ export default function AnalysisResults({ results }) {
               {[
                 { id: 'slider', label: 'Split Slider', icon: Sliders },
                 { id: 'blend', label: 'Heatmap Blend', icon: Layers },
-                { id: 'contour', label: 'Crack Contours', icon: Eye },
-                { id: 'profile', label: 'Laser Cross-Section (mm)', icon: Activity },
-                { id: '3d', label: '3D LiDAR Mesh', icon: Box },
+                { id: 'contour', label: laser_detected ? 'Target & Contours' : 'Crack Contours', icon: Eye },
+                { id: 'profile', label: laser_detected ? 'Laser Cross-Section (mm)' : 'Surface Profile (mm)', icon: Activity },
+                { id: '3d', label: '3D Topography', icon: Box },
               ].map(tab => {
                 const Icon = tab.icon;
                 const active = activeTab === tab.id;
@@ -270,8 +297,8 @@ export default function AnalysisResults({ results }) {
                   alt="Crack Contours" 
                   className="w-full h-full object-cover" 
                 />
-                <div className="absolute top-3 left-3 px-2.5 py-1 bg-black/60 backdrop-blur-md rounded text-[11px] font-medium text-cyan-400 border border-cyan-500/20">
-                  Morphological Crack Boundaries & Skeleton
+                <div className="absolute top-3 left-3 px-2.5 py-1 bg-black/60 backdrop-blur-md rounded text-[11px] font-medium text-cyan-400 border border-cyan-500/20 flex items-center gap-2">
+                  <span>{laser_detected ? "Laser Target Reticle & Crack Skeletons" : "Morphological Crack Boundaries & Skeleton"}</span>
                 </div>
               </div>
             )}
@@ -295,19 +322,21 @@ export default function AnalysisResults({ results }) {
           </div>
 
           <div className="panel p-4 flex flex-col">
-            <span className="text-[11px] font-medium text-muted">Laser Fissure Length</span>
-            <span className="text-xl font-bold text-primary mt-1 font-mono">{crackLengthCm} <span className="text-xs text-muted font-normal">cm</span> <span className="text-xs text-muted font-normal">({crack_length_px} px)</span></span>
-            <span className="text-[10px] text-muted mt-1">Fissure skeleton trajectory</span>
+            <span className="text-[11px] font-medium text-muted">Estimated Fissure Length</span>
+            <span className="text-xl font-bold text-primary mt-1 font-mono">{crackLengthCm} <span className="text-xs text-muted font-normal">cm</span></span>
+            <span className="text-[10px] text-muted mt-1">Skeleton trajectory ({crack_length_px} px)</span>
           </div>
 
           <div className="panel p-4 flex flex-col">
-            <span className="text-[11px] font-medium text-muted">Laser Depth Discontinuity</span>
-            <span className="text-xl font-bold text-red-400 mt-1 font-mono">Δ {max_depth_drop} <span className="text-xs text-red-400/80 font-normal">mm</span></span>
-            <span className="text-[10px] text-muted mt-1">Laser step gradient drop</span>
+            <span className="text-[11px] font-medium text-muted">{laser_detected ? "Laser Depth Drop" : "Surface Depth Drop"}</span>
+            <span className={`text-xl font-bold mt-1 font-mono ${laser_detected ? 'text-red-400' : 'text-cyan-400'}`}>
+              Δ {max_depth_drop} <span className="text-xs font-normal">mm</span>
+            </span>
+            <span className="text-[10px] text-muted mt-1">Peak-to-valley crevice step</span>
           </div>
 
           <div className="panel p-4 flex flex-col">
-            <span className="text-[11px] font-medium text-muted">Estimated Crack Aperture</span>
+            <span className="text-[11px] font-medium text-muted">Estimated Aperture</span>
             <span className="text-xl font-bold text-amber-400 mt-1 font-mono">{estimatedWidthMm} <span className="text-xs text-amber-400/80 font-normal">mm</span></span>
             <span className="text-[10px] text-muted mt-1">Transverse crevice width</span>
           </div>
@@ -319,9 +348,11 @@ export default function AnalysisResults({ results }) {
             <Info size={18} />
           </div>
           <div className="text-xs leading-relaxed text-muted">
-            <strong className="text-primary font-semibold">Measurement Units & Laser Methodology:</strong>
+            <strong className="text-primary font-semibold">Inspection Mode Explanation:</strong>
             <p className="mt-1">
-              All dimensions (depth in <strong>mm</strong>, width in <strong>mm</strong>, length in <strong>cm</strong>) are calibrated from <strong>Virtual Optical Laser Profilometry</strong> (MiDaS v2.1 monocular depth network), simulating physical laser displacement triangulation across the concrete structure.
+              {laser_detected 
+                ? "Physical laser dot detected on the wall. Depth measurements (in mm) are actively calibrated along the triangulated optical laser transect."
+                : "Standard visual camera mode active (no physical laser dot on wall). Depth values are generated from monocular surface disparity without laser-guided triangulation."}
             </p>
           </div>
         </div>

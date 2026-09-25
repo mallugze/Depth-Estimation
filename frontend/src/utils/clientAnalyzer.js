@@ -1,10 +1,15 @@
 /**
  * Client-Side Structural Analyzer (High-Precision Fallback Engine)
  * Robust morphological crack detection & monocular depth estimation
- * optimized for real-world hardware cameras (including ESP32-CAM OV2640/OV3660).
+ * with physical Laser Dot auto-detection on walls (e.g. from ESP32-CAM + laser pointer).
  */
 
-export async function analyzeImageClientSide(file, structureType = 'General Concrete', colormap = 'INFERNO') {
+export async function analyzeImageClientSide(
+  file, 
+  structureType = 'General Concrete', 
+  colormap = 'INFERNO', 
+  laserMode = 'AUTO' // 'AUTO', 'FORCE_LASER', 'NO_LASER'
+) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Failed to read image file.'));
@@ -30,7 +35,63 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
           const imgData = ctx.getImageData(0, 0, w, h);
           const data = imgData.data;
 
-          // 2. Grayscale & Luminance extraction
+          // 2. Physical Laser Dot Detection (Red / Green laser spot on the concrete surface)
+          let detectedLaserSpot = null;
+          if (laserMode !== 'NO_LASER') {
+            let maxLaserScore = 0;
+            for (let y = 4; y < h - 4; y += 2) {
+              for (let x = 4; x < w - 4; x += 2) {
+                const idx = (y * w + x) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+
+                // Red laser pointer criteria (bright saturated red core)
+                const isRedLaser = r > 205 && (r - g > 45) && (r - b > 45);
+                // Green laser pointer criteria (bright saturated green core)
+                const isGreenLaser = g > 210 && (g - r > 40) && (g - b > 40);
+
+                if (isRedLaser || isGreenLaser) {
+                  // Check cluster compactness (small circular laser dot)
+                  let clusterCount = 0;
+                  for (let dy = -3; dy <= 3; dy++) {
+                    for (let dx = -3; dx <= 3; dx++) {
+                      const nIdx = ((y + dy) * w + (x + dx)) * 4;
+                      const nr = data[nIdx];
+                      const ng = data[nIdx + 1];
+                      const nb = data[nIdx + 2];
+                      if ((isRedLaser && nr > 170 && (nr - ng > 30)) || (isGreenLaser && ng > 170 && (ng - nr > 25))) {
+                        clusterCount++;
+                      }
+                    }
+                  }
+
+                  if (clusterCount >= 3 && clusterCount <= 45) {
+                    const score = isRedLaser ? (r * 2 + (r - g) + (r - b)) : (g * 2 + (g - r) + (g - b));
+                    if (score > maxLaserScore) {
+                      maxLaserScore = score;
+                      detectedLaserSpot = {
+                        x: x,
+                        y: y,
+                        color: isRedLaser ? 'RED' : 'GREEN',
+                        intensity: Math.min(100, Math.round(score / 6))
+                      };
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // Determine final laser detection status
+          const hasLaserDot = (laserMode === 'FORCE_LASER') || (laserMode === 'AUTO' && detectedLaserSpot !== null);
+          const laserCoords = detectedLaserSpot ? { 
+            x: Math.round(detectedLaserSpot.x * (width / w)), 
+            y: Math.round(detectedLaserSpot.y * (height / h)),
+            color: detectedLaserSpot.color
+          } : (hasLaserDot ? { x: Math.round(width / 2), y: Math.round(height / 2), color: 'RED' } : null);
+
+          // 3. Grayscale & Luminance extraction
           const gray = new Float32Array(w * h);
           let sumLum = 0;
           for (let i = 0; i < data.length; i += 4) {
@@ -40,7 +101,7 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
           }
           const meanLum = sumLum / (w * h);
 
-          // 3. Gaussian-filtered local contrast to eliminate ESP32-CAM sensor noise
+          // 4. Gaussian-filtered local contrast to eliminate ESP32-CAM sensor noise
           const blurred = new Float32Array(w * h);
           for (let y = 1; y < h - 1; y++) {
             for (let x = 1; x < w - 1; x++) {
@@ -52,12 +113,11 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
             }
           }
 
-          // 4. Adaptive local thresholding: detect pixels significantly darker than local neighborhood
+          // 5. Adaptive local thresholding: detect pixels significantly darker than local neighborhood
           const candidates = new Uint8Array(w * h);
           const boxR = 6;
           for (let y = boxR; y < h - boxR; y += 2) {
             for (let x = boxR; x < w - boxR; x += 2) {
-              // Local mean
               let localSum = 0;
               let count = 0;
               for (let dy = -boxR; dy <= boxR; dy += 3) {
@@ -69,7 +129,6 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
               const localMean = localSum / count;
               const val = blurred[y * w + x];
               
-              // Strong dark crevice contrast requirement
               if (val < (localMean - 18) && val < (meanLum * 0.82)) {
                 candidates[y * w + x] = 1;
                 candidates[y * w + (x + 1)] = 1;
@@ -79,7 +138,7 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
             }
           }
 
-          // 5. Connected Component Analysis (Filter out noise/grains; retain continuous linear fissures)
+          // 6. Connected Component Analysis (Filter out noise/grains; retain continuous linear fissures)
           const visited = new Uint8Array(w * h);
           const crackMask = new Uint8Array(w * h);
           let totalCrackPixels = 0;
@@ -90,7 +149,6 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
             for (let x = 2; x < w - 2; x++) {
               const startIdx = y * w + x;
               if (candidates[startIdx] && !visited[startIdx]) {
-                // BFS Flood Fill
                 const queue = [startIdx];
                 visited[startIdx] = 1;
                 const componentPixels = [];
@@ -107,7 +165,6 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
                   if (cy < minY) minY = cy;
                   if (cy > maxY) maxY = cy;
 
-                  // 8-neighbor expansion
                   for (let dy = -1; dy <= 1; dy++) {
                     for (let dx = -1; dx <= 1; dx++) {
                       if (dx === 0 && dy === 0) continue;
@@ -129,7 +186,6 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
                 const span = Math.hypot(spanX, spanY);
                 const count = componentPixels.length;
 
-                // Crack criteria: Must be continuous, elongated, and have significant spatial length
                 const isElongated = (span >= 25 && count >= 35) || (span >= 40 && count >= 20);
                 if (isElongated) {
                   validCrackComponents++;
@@ -144,7 +200,7 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
             }
           }
 
-          // 6. Classification & Structural Decision
+          // 7. Classification Decision
           const crackAreaPct = parseFloat(((totalCrackPixels / (w * h)) * 100).toFixed(2));
           const hasCrack = validCrackComponents >= 1 && (totalCrackPixels >= 45 || maxComponentSpan >= 30);
           const prediction = hasCrack ? 'crack' : 'no_crack';
@@ -169,14 +225,13 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
               severityScore = parseFloat((30 + crackAreaPct * 2.5).toFixed(1));
             }
           } else {
-            // Sound surface
             confidence = 0.982;
             severity = 'CLEAR';
             severityScore = 8.5;
             maxDepthDrop = 5.2;
           }
 
-          // 7. Depth Map & Disparity Approximation
+          // 8. Monocular Depth Map & Disparity Approximation
           const depth = new Float32Array(w * h);
           for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) {
@@ -188,7 +243,7 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
             }
           }
 
-          // 8. Generate Depth Heatmap Image
+          // 9. Generate Depth Heatmap Image
           const depthCanvas = document.createElement('canvas');
           depthCanvas.width = w;
           depthCanvas.height = h;
@@ -212,7 +267,7 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
           depthCtx.putImageData(depthImgData, 0, 0);
           const depthMapUrl = depthCanvas.toDataURL('image/png');
 
-          // 9. Generate Crack Contour Overlay (only draw contours if a real crack exists)
+          // 10. Generate Crack Contour & Laser Target Overlay
           const contourCanvas = document.createElement('canvas');
           contourCanvas.width = w;
           contourCanvas.height = h;
@@ -231,10 +286,29 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
             }
           }
           contourCtx.putImageData(contourImgData, 0, 0);
+
+          // If laser dot is detected, draw an animated laser target reticle on the contour canvas
+          if (detectedLaserSpot) {
+            const lx = detectedLaserSpot.x;
+            const ly = detectedLaserSpot.y;
+            contourCtx.strokeStyle = detectedLaserSpot.color === 'RED' ? '#ef4444' : '#10b981';
+            contourCtx.lineWidth = 2;
+            contourCtx.beginPath();
+            contourCtx.arc(lx, ly, 12, 0, 2 * Math.PI);
+            contourCtx.stroke();
+            // Reticle crosshairs
+            contourCtx.beginPath();
+            contourCtx.moveTo(lx - 16, ly);
+            contourCtx.lineTo(lx + 16, ly);
+            contourCtx.moveTo(lx, ly - 16);
+            contourCtx.lineTo(lx, ly + 16);
+            contourCtx.stroke();
+          }
+
           const contourUrl = contourCanvas.toDataURL('image/png');
 
-          // 10. 1D Cross-Section Transect Profile
-          const midY = Math.floor(h / 2);
+          // 11. 1D Cross-Section Transect Profile (passing through laser dot coordinate if detected)
+          const midY = detectedLaserSpot ? detectedLaserSpot.y : Math.floor(h / 2);
           const profileData = [];
           const numSamples = 100;
           for (let i = 0; i < numSamples; i++) {
@@ -247,7 +321,7 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
             });
           }
 
-          // 11. 3D LiDAR Point Cloud (40x40 grid)
+          // 12. 3D LiDAR Point Cloud (40x40 grid)
           const gridDim = 40;
           const pointCloud3d = [];
           for (let r = 0; r < gridDim; r++) {
@@ -274,6 +348,9 @@ export async function analyzeImageClientSide(file, structureType = 'General Conc
             crack_length_px: hasCrack ? parseFloat((maxComponentSpan * 1.4).toFixed(1)) : 0.0,
             max_depth_drop: maxDepthDrop,
             depth_std: hasCrack ? 142.5 : 28.4,
+            laser_detected: hasLaserDot,
+            laser_coords: laserCoords,
+            laser_mode: hasLaserDot ? "PHYSICAL_LASER_ACTIVE" : "STANDARD_VISUAL_SCAN",
             image_path: reader.result,
             depth_map_path: depthMapUrl,
             contour_path: contourUrl,

@@ -9,7 +9,7 @@ import BatchInspection from './components/BatchInspection';
 import ModelDiagnostics from './components/ModelDiagnostics';
 import { API_BASE_URL, SAMPLE_DEMO_RESULT } from './config';
 import { analyzeImageClientSide } from './utils/clientAnalyzer';
-import { Sliders, Sparkles, Play, Trash2, ArrowLeft, Eye, Zap } from 'lucide-react';
+import { Sliders, Sparkles, Play, Trash2, ArrowLeft, Eye, Zap, Radio, Target } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -24,6 +24,7 @@ function App() {
   // Inspection options
   const [structureType, setStructureType] = useState('General Concrete');
   const [colormap, setColormap] = useState('INFERNO');
+  const [laserMode, setLaserMode] = useState('AUTO'); // 'AUTO', 'FORCE_LASER', 'NO_LASER'
 
   const handleFileDrop = (selectedFile) => {
     setFile(selectedFile);
@@ -42,7 +43,12 @@ function App() {
   };
 
   const handleLoadDemo = () => {
-    setResults(SAMPLE_DEMO_RESULT);
+    setResults({
+      ...SAMPLE_DEMO_RESULT,
+      laser_detected: true,
+      laser_coords: { x: 400, y: 200, color: 'RED' },
+      laser_mode: 'PHYSICAL_LASER_ACTIVE'
+    });
     setPreview(SAMPLE_DEMO_RESULT.image_path);
     setError(null);
     setCurrentView('inspection');
@@ -60,6 +66,7 @@ function App() {
       formData.append('file', file);
       formData.append('structure_type', structureType);
       formData.append('colormap', colormap);
+      formData.append('laser_mode', laserMode);
 
       try {
         const endpoint = `${API_BASE_URL}/analyze-image`;
@@ -79,9 +86,9 @@ function App() {
       }
     }
 
-    // Fallback: Client-Side Deep Engine (Works seamlessly on Vercel)
+    // Fallback: Client-Side Deep Engine with Laser Dot Detection
     try {
-      const clientData = await analyzeImageClientSide(file, structureType, colormap);
+      const clientData = await analyzeImageClientSide(file, structureType, colormap, laserMode);
       setResults(clientData);
     } catch (err) {
       console.error(err);
@@ -111,7 +118,7 @@ function App() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
                       <h2 className="text-2xl font-bold tracking-tight text-primary">New Surface Inspection</h2>
-                      <p className="text-xs text-muted mt-1">Upload a high-resolution concrete scan to classify anomalies, estimate depth, and render 3D topography.</p>
+                      <p className="text-xs text-muted mt-1">Upload a surface photo to detect cracks, estimate depth, and auto-detect physical laser dots on walls.</p>
                     </div>
 
                     <button
@@ -135,7 +142,7 @@ function App() {
                         <div className="w-12 h-12 border-3 border-slate-700 border-t-cyan-400 rounded-full animate-spin"></div>
                         <div className="text-center">
                           <p className="text-primary text-sm font-bold">Computing Multi-Signal Inference...</p>
-                          <p className="text-xs text-muted mt-1">Classifying cracks • Estimating depth • Profiling cross-sections</p>
+                          <p className="text-xs text-muted mt-1">Detecting laser dot • Classifying cracks • Profiling depth</p>
                         </div>
                       </div>
                     )}
@@ -143,12 +150,30 @@ function App() {
                     <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b border-border">
                       <div>
                         <h3 className="text-sm font-bold text-primary">Inspection Configuration</h3>
-                        <p className="text-xs text-muted">Select structural context and visualization colormap</p>
+                        <p className="text-xs text-muted">Select structural context, laser detection mode, and colormap</p>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3">
+                        {/* Laser Spot Detection Mode */}
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted">Asset Type:</span>
+                          <span className="text-xs text-muted flex items-center gap-1">
+                            <Radio size={12} className="text-red-400" />
+                            <span>Laser Mode:</span>
+                          </span>
+                          <select 
+                            value={laserMode} 
+                            onChange={(e) => setLaserMode(e.target.value)}
+                            className="text-xs bg-surface-card border border-border text-primary rounded-lg px-2.5 py-1.5 font-medium focus:outline-none focus:border-red-400"
+                          >
+                            <option value="AUTO">Auto-Detect Laser Spot (Recommended)</option>
+                            <option value="FORCE_LASER">Force Laser Active</option>
+                            <option value="NO_LASER">Camera Only (No Laser)</option>
+                          </select>
+                        </div>
+
+                        {/* Asset Type */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted">Asset:</span>
                           <select 
                             value={structureType} 
                             onChange={(e) => setStructureType(e.target.value)}
@@ -162,14 +187,16 @@ function App() {
                           </select>
                         </div>
 
+                        {/* Depth Colormap */}
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted">Depth Colormap:</span>
+                          <span className="text-xs text-muted">Colormap:</span>
                           <select 
                             value={colormap} 
                             onChange={(e) => setColormap(e.target.value)}
                             className="text-xs bg-surface-card border border-border text-primary rounded-lg px-2.5 py-1.5 font-medium focus:outline-none focus:border-accent"
                           >
                             <option value="INFERNO">Inferno (Default)</option>
+                            <option value="LASER_RED">Laser Red</option>
                             <option value="PLASMA">Plasma</option>
                             <option value="VIRIDIS">Viridis</option>
                             <option value="TURBO">Turbo</option>
