@@ -122,7 +122,7 @@ def export_reports_csv(db: Session = Depends(get_db)):
     writer = csv.writer(output)
     writer.writerow([
         'ID', 'Filename', 'Structure Type', 'Prediction', 'Confidence', 
-        'Severity', 'Severity Score (0-100)', 'Crack Area %', 
+        'Severity', 'Repair Deadline', 'Severity Score (0-100)', 'Crack Area %', 
         'Crack Length (px)', 'Max Depth Drop', 'Depth Std', 'Created At'
     ])
     
@@ -130,6 +130,7 @@ def export_reports_csv(db: Session = Depends(get_db)):
         writer.writerow([
             r.id, r.filename, getattr(r, 'structure_type', 'General'),
             r.prediction, round(r.confidence, 4), r.severity,
+            getattr(r, 'repair_deadline', 'Routine (365 Days)'),
             getattr(r, 'severity_score', 0.0),
             getattr(r, 'crack_area_pct', 0.0),
             getattr(r, 'crack_length_px', 0.0),
@@ -246,7 +247,11 @@ async def analyze_image_endpoint(
             image_path=orig_url,
             depth_map_path=depth_url,
             contour_path=contour_url,
-            structure_type=structure_type
+            structure_type=structure_type,
+            repair_deadline=result.get("repair_deadline"),
+            repair_priority=result.get("repair_priority"),
+            repair_action=result.get("repair_action"),
+            repair_days=result.get("repair_days", 365)
         )
         db.add(db_report)
         db.commit()
@@ -260,6 +265,12 @@ async def analyze_image_endpoint(
             "confidence": db_report.confidence,
             "severity": db_report.severity,
             "severity_score": db_report.severity_score,
+            "repair_deadline": result.get("repair_deadline"),
+            "repair_days": result.get("repair_days"),
+            "repair_target_date": result.get("repair_target_date"),
+            "repair_priority": result.get("repair_priority"),
+            "repair_action": result.get("repair_action"),
+            "repair_risk_impact": result.get("repair_risk_impact"),
             "crack_area_pct": db_report.crack_area_pct,
             "crack_length_px": db_report.crack_length_px,
             "max_depth_drop": db_report.max_depth_drop,
@@ -331,7 +342,11 @@ async def analyze_batch_endpoint(
                 image_path=orig_url,
                 depth_map_path=depth_url,
                 contour_path=contour_url,
-                structure_type=structure_type
+                structure_type=structure_type,
+                repair_deadline=res.get("repair_deadline"),
+                repair_priority=res.get("repair_priority"),
+                repair_action=res.get("repair_action"),
+                repair_days=res.get("repair_days", 365)
             )
             db.add(db_report)
             db.commit()
@@ -344,6 +359,12 @@ async def analyze_batch_endpoint(
                 "confidence": db_report.confidence,
                 "severity": db_report.severity,
                 "severity_score": db_report.severity_score,
+                "repair_deadline": res.get("repair_deadline"),
+                "repair_days": res.get("repair_days"),
+                "repair_target_date": res.get("repair_target_date"),
+                "repair_priority": res.get("repair_priority"),
+                "repair_action": res.get("repair_action"),
+                "repair_risk_impact": res.get("repair_risk_impact"),
                 "depth_std": db_report.depth_std,
                 "image_path": orig_url,
                 "depth_map_path": depth_url

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, Download, Trash2, Eye, Filter, 
-  Calendar, CheckCircle2, AlertTriangle, X 
+  Calendar, CheckCircle2, AlertTriangle, X, Clock, Wrench 
 } from 'lucide-react';
 import { API_BASE_URL, getImageUrl } from '../config';
 
@@ -15,6 +15,35 @@ export default function PastReports({ onSelectReport }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [previewModalReport, setPreviewModalReport] = useState(null);
   const itemsPerPage = 10;
+
+  const getRepairDeadline = (severity, prediction, existingDeadline) => {
+    if (existingDeadline) return existingDeadline;
+    const isCrack = prediction && prediction.toLowerCase().includes('crack') && !prediction.toLowerCase().includes('no');
+    if (!isCrack || !severity || severity.toUpperCase() === 'CLEAR') {
+      return "Routine (365 Days)";
+    }
+    switch (severity.toUpperCase()) {
+      case 'CRITICAL': return "24 - 48 Hours";
+      case 'HIGH': return "7 - 14 Days";
+      case 'MEDIUM': return "30 - 60 Days";
+      case 'LOW': return "90 - 180 Days";
+      default: return "365 Days";
+    }
+  };
+
+  const getRepairBadgeClass = (severity, prediction) => {
+    const isCrack = prediction && prediction.toLowerCase().includes('crack') && !prediction.toLowerCase().includes('no');
+    if (!isCrack || !severity || severity.toUpperCase() === 'CLEAR') {
+      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+    }
+    switch (severity.toUpperCase()) {
+      case 'CRITICAL': return "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse";
+      case 'HIGH': return "bg-amber-500/20 text-amber-300 border-amber-500/40";
+      case 'MEDIUM': return "bg-blue-500/15 text-blue-300 border-blue-500/30";
+      case 'LOW': return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
+      default: return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+    }
+  };
 
   const fetchReports = async () => {
     setLoading(true);
@@ -233,6 +262,7 @@ export default function PastReports({ onSelectReport }) {
                   <th className="px-5 py-3.5 border-b border-border">Classification</th>
                   <th className="px-5 py-3.5 border-b border-border">Confidence</th>
                   <th className="px-5 py-3.5 border-b border-border">Severity Level</th>
+                  <th className="px-5 py-3.5 border-b border-border">Repair Deadline</th>
                   <th className="px-5 py-3.5 border-b border-border">Fissure Area</th>
                   <th className="px-5 py-3.5 border-b border-border">Depth Discontinuity</th>
                   <th className="px-5 py-3.5 border-b border-border text-right">Actions</th>
@@ -266,6 +296,12 @@ export default function PastReports({ onSelectReport }) {
                       <td className="px-5 py-3.5">
                         <span className={`badge ${getSeverityBadge(report.severity)}`}>
                           {report.severity}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span className={`text-[11px] font-mono px-2 py-0.5 rounded border inline-flex items-center gap-1 ${getRepairBadgeClass(report.severity, report.prediction)}`}>
+                          <Clock size={11} />
+                          <span>{getRepairDeadline(report.severity, report.prediction, report.repair_deadline)}</span>
                         </span>
                       </td>
                       <td className="px-5 py-3.5 font-mono text-muted">
@@ -389,6 +425,30 @@ export default function PastReports({ onSelectReport }) {
                   <div className="text-sm font-bold text-cyan-400 font-mono">
                     {previewModalReport.max_depth_drop ? `Δ ${previewModalReport.max_depth_drop} mm` : (previewModalReport.depth_std ? `${previewModalReport.depth_std.toFixed(2)} mm` : '0.00 mm')}
                   </div>
+                </div>
+              </div>
+
+              {/* Repair Deadline & Recommended Action Card */}
+              <div className="p-3.5 rounded-lg border border-border/80 bg-surface-card flex items-start gap-3">
+                <div className="p-2 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 mt-0.5 flex-shrink-0">
+                  <Wrench size={16} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                      <Clock size={12} className="text-cyan-400" />
+                      <span>Repair Deadline:</span>
+                      <span className="text-amber-400 font-mono font-bold">
+                        {getRepairDeadline(previewModalReport.severity, previewModalReport.prediction, previewModalReport.repair_deadline)}
+                      </span>
+                    </span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${getRepairBadgeClass(previewModalReport.severity, previewModalReport.prediction)}`}>
+                      {previewModalReport.repair_priority || 'STANDARD PROTOCOL'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                    <strong>Recommended Remedial Action:</strong> {previewModalReport.repair_action || "Schedule routine maintenance and structural sealing according to civil structural guidelines."}
+                  </p>
                 </div>
               </div>
             </div>

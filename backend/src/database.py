@@ -33,7 +33,11 @@ def auto_migrate_sqlite():
                     "crack_length_px": "FLOAT DEFAULT 0.0",
                     "max_depth_drop": "FLOAT DEFAULT 0.0",
                     "contour_path": "VARCHAR",
-                    "structure_type": "VARCHAR DEFAULT 'General Concrete'"
+                    "structure_type": "VARCHAR DEFAULT 'General Concrete'",
+                    "repair_deadline": "VARCHAR DEFAULT 'Routine Annual Inspection (365 Days)'",
+                    "repair_priority": "VARCHAR DEFAULT 'SAFE / ROUTINE'",
+                    "repair_action": "TEXT",
+                    "repair_days": "INTEGER DEFAULT 365"
                 }
                 
                 for col_name, col_type in new_columns.items():

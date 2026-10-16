@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, CheckCircle2, AlertTriangle, FileText, Download, Play, Trash2, ArrowRight } from 'lucide-react';
+import { UploadCloud, CheckCircle2, AlertTriangle, FileText, Download, Play, Trash2, ArrowRight, Clock } from 'lucide-react';
 import { API_BASE_URL, getImageUrl } from '../config';
 import { analyzeImageClientSide } from '../utils/clientAnalyzer';
 
@@ -116,9 +116,9 @@ export default function BatchInspection({ onSelectReport }) {
           {batchResults && (
             <button 
               onClick={() => {
-                const csvHeader = "ID,Filename,Classification,Confidence,Severity,Crack_Area_Pct\n";
+                const csvHeader = "ID,Filename,Classification,Confidence,Severity,Repair_Deadline,Crack_Area_Pct\n";
                 const csvRows = batchResults.reports.map(r => 
-                  `${r.id},"${r.filename}",${r.prediction},${r.confidence},${r.severity},${r.crack_area_pct || 0}`
+                  `${r.id},"${r.filename}",${r.prediction},${r.confidence},${r.severity},"${r.repair_deadline || 'Routine'}",${r.crack_area_pct || 0}`
                 ).join("\n");
                 const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
@@ -296,7 +296,10 @@ export default function BatchInspection({ onSelectReport }) {
                         <span className="font-mono text-cyan-400 font-medium">Δ {report.max_depth_drop || '0.0'} mm</span>
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-muted pt-1 border-t border-border/50">
-                        <span>Area: <strong className="text-primary">{report.crack_area_pct || 0}%</strong></span>
+                        <span className="flex items-center gap-1 font-mono text-amber-400" title={report.repair_deadline || 'Routine'}>
+                          <Clock size={11} className="text-cyan-400 flex-shrink-0" />
+                          <span>{report.repair_deadline ? report.repair_deadline.replace(/\s*\(.*\)/, '') : 'Routine'}</span>
+                        </span>
                         <span className={`badge ${
                           sevLower === 'critical' ? 'badge-critical' :
                           sevLower === 'high' ? 'badge-high' :

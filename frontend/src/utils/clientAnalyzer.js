@@ -214,15 +214,18 @@ export async function analyzeImageClientSide(
             confidence = parseFloat(Math.min(0.99, 0.88 + (crackAreaPct / 15)).toFixed(3));
             maxDepthDrop = parseFloat((26.0 + crackAreaPct * 2.2 + maxComponentSpan * 0.15).toFixed(1));
 
-            if (crackAreaPct > 8.0 || maxDepthDrop > 45 || maxComponentSpan > 120) {
+            if (crackAreaPct > 10.0 || maxDepthDrop > 48 || maxComponentSpan > 130) {
+              severity = 'CRITICAL';
+              severityScore = parseFloat(Math.min(98, 86 + crackAreaPct * 1.2).toFixed(1));
+            } else if (crackAreaPct > 5.0 || maxDepthDrop > 34 || maxComponentSpan > 80) {
               severity = 'HIGH';
-              severityScore = parseFloat(Math.min(96, 75 + crackAreaPct * 1.5).toFixed(1));
-            } else if (crackAreaPct > 2.5 || maxDepthDrop > 30) {
+              severityScore = parseFloat(Math.min(84, 68 + crackAreaPct * 2.0).toFixed(1));
+            } else if (crackAreaPct > 1.8 || maxDepthDrop > 20) {
               severity = 'MEDIUM';
-              severityScore = parseFloat((50 + crackAreaPct * 3).toFixed(1));
+              severityScore = parseFloat((45 + crackAreaPct * 3).toFixed(1));
             } else {
               severity = 'LOW';
-              severityScore = parseFloat((30 + crackAreaPct * 2.5).toFixed(1));
+              severityScore = parseFloat((25 + crackAreaPct * 2.5).toFixed(1));
             }
           } else {
             confidence = 0.982;
@@ -230,6 +233,47 @@ export async function analyzeImageClientSide(
             severityScore = 8.5;
             maxDepthDrop = 5.2;
           }
+
+          // 8. Structural Repair Deadline & Remedial Engineering Protocol
+          let repairDeadline = "Routine Annual Inspection (365 Days)";
+          let repairDays = 365;
+          let repairPriority = "SAFE / ROUTINE";
+          let repairAction = "No immediate repairs required. Concrete surface is structurally intact. Continue scheduled annual structural health audit.";
+          let repairRiskImpact = "Negligible structural vulnerability. Planar surface integrity within acceptable civil engineering tolerances.";
+
+          if (severity === 'CRITICAL') {
+            repairDeadline = "Immediate Action (Within 24 - 48 Hours)";
+            repairDays = 2;
+            repairPriority = "PRIORITY 1 - EMERGENCY";
+            repairAction = "Immediate structural shoring & load restriction. High-pressure polyurethane / epoxy structural injection with carbon-fiber reinforcement.";
+            repairRiskImpact = "High risk of progressive structural displacement, rebar corrosion, and concrete spalling under dynamic loads.";
+          } else if (severity === 'HIGH') {
+            repairDeadline = "Urgent Remediation (Within 7 - 14 Days)";
+            repairDays = 14;
+            repairPriority = "PRIORITY 2 - URGENT";
+            repairAction = "Structural polymer epoxy injection and elastomeric waterproofing to prevent water penetration and internal rebar corrosion.";
+            repairRiskImpact = "Risk of water ingress, chemical carbonation, and crack widening during thermal expansion cycles.";
+          } else if (severity === 'MEDIUM') {
+            repairDeadline = "Scheduled Maintenance (Within 30 - 60 Days)";
+            repairDays = 45;
+            repairPriority = "PRIORITY 3 - SCHEDULED";
+            repairAction = "Surface routing and elastomeric sealant application. Install telltale crack monitoring gauge to track displacement.";
+            repairRiskImpact = "Moderate surface degradation. Potential progressive micro-fissuring if left unsealed.";
+          } else if (severity === 'LOW') {
+            repairDeadline = "Preventive Maintenance (Within 90 - 180 Days)";
+            repairDays = 120;
+            repairPriority = "PRIORITY 4 - PREVENTIVE";
+            repairAction = "Cosmetic crack filling with cementitious slurry or polymer sealant. Continue quarterly photographic inspection.";
+            repairRiskImpact = "Minor hairline fissure. Superficial aesthetic impact with low structural consequence.";
+          }
+
+          const targetDateObj = new Date();
+          targetDateObj.setDate(targetDateObj.getDate() + repairDays);
+          const repairTargetDate = targetDateObj.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
 
           // 8. Monocular Depth Map & Disparity Approximation
           const depth = new Float32Array(w * h);
@@ -351,6 +395,12 @@ export async function analyzeImageClientSide(
             laser_detected: hasLaserDot,
             laser_coords: laserCoords,
             laser_mode: hasLaserDot ? "PHYSICAL_LASER_ACTIVE" : "STANDARD_VISUAL_SCAN",
+            repair_deadline: repairDeadline,
+            repair_days: repairDays,
+            repair_target_date: repairTargetDate,
+            repair_priority: repairPriority,
+            repair_action: repairAction,
+            repair_risk_impact: repairRiskImpact,
             image_path: reader.result,
             depth_map_path: depthMapUrl,
             contour_path: contourUrl,

@@ -19,4 +19,8 @@ class Report(Base):
     depth_map_path = Column(String)
     contour_path = Column(String, nullable=True)
     structure_type = Column(String, default="General Concrete")
+    repair_deadline = Column(String, default="Routine Annual Inspection (365 Days)")
+    repair_priority = Column(String, default="SAFE / ROUTINE")
+    repair_action = Column(String, nullable=True)
+    repair_days = Column(Integer, default=365)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

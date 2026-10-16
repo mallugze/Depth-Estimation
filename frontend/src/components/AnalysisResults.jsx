@@ -7,7 +7,8 @@ import CrossSectionProfiler from './CrossSectionProfiler';
 import { getImageUrl } from '../config';
 import { 
   Download, Layers, Eye, Sliders, Activity, 
-  ShieldCheck, AlertTriangle, Box, TrendingDown, Maximize2, Radio, Info, Zap, Ruler, Camera, Target 
+  ShieldCheck, AlertTriangle, Box, TrendingDown, Maximize2, Radio, Info, Zap, Ruler, Camera, Target,
+  Clock, Calendar, Wrench, AlertOctagon, CheckCircle2
 } from 'lucide-react';
 
 export default function AnalysisResults({ results }) {
@@ -27,6 +28,12 @@ export default function AnalysisResults({ results }) {
     laser_detected = false,
     laser_coords = null,
     laser_mode = "STANDARD_VISUAL_SCAN",
+    repair_deadline,
+    repair_days,
+    repair_target_date,
+    repair_priority,
+    repair_action,
+    repair_risk_impact,
     image_path, 
     depth_map_path,
     contour_path,
@@ -38,7 +45,7 @@ export default function AnalysisResults({ results }) {
 
   const formattedConfidence = (confidence * 100).toFixed(1) + '%';
   const isCrack = prediction.toLowerCase().includes('crack') && !prediction.toLowerCase().includes('no');
-  const sevLower = severity.toLowerCase();
+  const sevLower = severity ? severity.toLowerCase() : 'clear';
 
   // Calculated physical approximations in metric units (mm / cm)
   const crackLengthCm = (crack_length_px * 0.1).toFixed(1);
@@ -52,6 +59,93 @@ export default function AnalysisResults({ results }) {
       case 'low': return 'badge-low';
       default: return 'badge-clear';
     }
+  };
+
+  // Comprehensive civil engineering repair protocol & deadline computation
+  const getRepairInfo = (sev, isCrk) => {
+    if (!isCrk || !sev || sev.toUpperCase() === 'CLEAR') {
+      return {
+        deadline: "Routine Annual Inspection (365 Days)",
+        days: 365,
+        priority: "SAFE / ROUTINE",
+        action: "No immediate structural repairs required. Surface is intact and within allowable planar tolerance. Continue scheduled annual structural health audit.",
+        risk: "Low structural vulnerability. Sound concrete structural envelope.",
+        targetDate: new Date(Date.now() + 365 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+        borderClass: "border-emerald-500/30",
+        bgClass: "from-emerald-950/20 via-surface-card to-surface-card",
+        iconColor: "text-emerald-400 bg-emerald-500/20 border-emerald-500/30"
+      };
+    }
+    switch (sev.toUpperCase()) {
+      case 'CRITICAL':
+        return {
+          deadline: "Immediate Action (Within 24 - 48 Hours)",
+          days: 2,
+          priority: "PRIORITY 1 - EMERGENCY HAZARD",
+          action: "Immediate structural shoring & load restriction. High-pressure polyurethane / epoxy structural injection with carbon-fiber reinforcement.",
+          risk: "High risk of progressive structural displacement, rebar oxidation, and concrete spalling under dynamic cyclic loads.",
+          targetDate: new Date(Date.now() + 2 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse",
+          borderClass: "border-rose-500/50 shadow-glow-rose",
+          bgClass: "from-rose-950/50 via-surface-card to-surface-card",
+          iconColor: "text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse"
+        };
+      case 'HIGH':
+        return {
+          deadline: "Urgent Remediation (Within 7 - 14 Days)",
+          days: 14,
+          priority: "PRIORITY 2 - URGENT",
+          action: "Structural polymer epoxy injection and elastomeric waterproofing to prevent water penetration and internal rebar corrosion.",
+          risk: "Active moisture ingress risk, accelerated chemical carbonation, and crack propagation during thermal expansion cycles.",
+          targetDate: new Date(Date.now() + 14 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+          borderClass: "border-amber-500/40",
+          bgClass: "from-amber-950/40 via-surface-card to-surface-card",
+          iconColor: "text-amber-400 bg-amber-500/20 border-amber-500/40"
+        };
+      case 'MEDIUM':
+        return {
+          deadline: "Scheduled Maintenance (Within 30 - 60 Days)",
+          days: 45,
+          priority: "PRIORITY 3 - SCHEDULED",
+          action: "Surface routing and elastomeric sealant application. Install telltale crack monitoring gauge to track dynamic displacement.",
+          risk: "Moderate surface degradation. Potential progressive micro-fissuring if left unsealed against environmental weathering.",
+          targetDate: new Date(Date.now() + 45 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          badgeClass: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+          borderClass: "border-blue-500/30",
+          bgClass: "from-blue-950/30 via-surface-card to-surface-card",
+          iconColor: "text-blue-400 bg-blue-500/20 border-blue-500/30"
+        };
+      case 'LOW':
+      default:
+        return {
+          deadline: "Preventive Care (Within 90 - 180 Days)",
+          days: 120,
+          priority: "PRIORITY 4 - PREVENTIVE",
+          action: "Cosmetic crack filling with cementitious slurry or polymer sealant. Continue quarterly photographic inspection.",
+          risk: "Minor hairline fissure. Superficial aesthetic impact with low structural consequence.",
+          targetDate: new Date(Date.now() + 120 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          badgeClass: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
+          borderClass: "border-cyan-500/30",
+          bgClass: "from-cyan-950/30 via-surface-card to-surface-card",
+          iconColor: "text-cyan-400 bg-cyan-500/20 border-cyan-500/30"
+        };
+    }
+  };
+
+  const defaultRepair = getRepairInfo(severity, isCrack);
+  const repairData = {
+    deadline: repair_deadline || defaultRepair.deadline,
+    days: repair_days || defaultRepair.days,
+    priority: repair_priority || defaultRepair.priority,
+    action: repair_action || defaultRepair.action,
+    risk: repair_risk_impact || defaultRepair.risk,
+    targetDate: repair_target_date || defaultRepair.targetDate,
+    badgeClass: defaultRepair.badgeClass,
+    borderClass: defaultRepair.borderClass,
+    bgClass: defaultRepair.bgClass,
+    iconColor: defaultRepair.iconColor
   };
 
   const handleDownloadPDF = async () => {
@@ -96,6 +190,12 @@ export default function AnalysisResults({ results }) {
           <div className="flex flex-wrap items-center gap-2.5">
             <span className={`badge ${getSeverityBadgeClass()}`}>
               {severity} SEVERITY
+            </span>
+
+            {/* Repair Urgency & Action Deadline Badge */}
+            <span className={`text-xs font-mono px-2.5 py-0.5 rounded border flex items-center gap-1.5 ${repairData.badgeClass}`}>
+              <Clock size={13} />
+              <span>Deadline: {repairData.deadline}</span>
             </span>
 
             {/* Conditional Laser Status Badge based on actual detection */}
@@ -165,6 +265,64 @@ export default function AnalysisResults({ results }) {
             <div>
               <span className="text-[11px] text-muted font-medium">{laser_detected ? "Laser Disparity Variance" : "Planar Depth Variance"}</span>
               <div className="text-base font-bold text-cyan-400 font-mono">{depth_std ? `${depth_std.toFixed(2)} mm` : '142.50 mm'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Structural Repair Deadline & Remedial Engineering Protocol Card */}
+        <div className={`p-4 rounded-xl border bg-gradient-to-r ${repairData.bgClass} ${repairData.borderClass} flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-all`}>
+          <div className="flex items-start gap-3.5">
+            <div className={`p-2.5 rounded-lg border mt-0.5 flex-shrink-0 ${repairData.iconColor}`}>
+              <Wrench size={22} />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="text-xs sm:text-sm font-bold text-primary flex items-center gap-1.5">
+                  <span>Repair Deadline:</span>
+                  <span className={`font-mono font-extrabold ${
+                    sevLower === 'critical' ? 'text-rose-400' :
+                    sevLower === 'high' ? 'text-amber-400' :
+                    sevLower === 'medium' ? 'text-blue-300' :
+                    sevLower === 'low' ? 'text-cyan-300' : 'text-emerald-400'
+                  }`}>
+                    {repairData.deadline}
+                  </span>
+                </h4>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${repairData.badgeClass}`}>
+                  {repairData.priority}
+                </span>
+              </div>
+              <p className="text-xs text-slate-200 mt-1.5 max-w-2xl leading-relaxed">
+                <strong className="text-cyan-400 font-semibold">Recommended Remedial Action:</strong> {repairData.action}
+              </p>
+              <p className="text-[11px] text-muted mt-1 max-w-2xl flex items-center gap-1.5">
+                <AlertTriangle size={12} className="text-amber-400 flex-shrink-0" />
+                <span><strong>Risk of Delay:</strong> {repairData.risk}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 border-t md:border-t-0 md:border-l border-border/70 pt-3 md:pt-0 md:pl-6 w-full md:w-auto flex-shrink-0">
+            <div>
+              <div className="text-[10px] text-muted uppercase font-mono flex items-center gap-1">
+                <Calendar size={11} className="text-cyan-400" />
+                <span>Target Deadline</span>
+              </div>
+              <div className="text-sm font-bold text-primary font-mono mt-0.5">
+                {repairData.targetDate}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted uppercase font-mono flex items-center gap-1">
+                <Clock size={11} className="text-amber-400" />
+                <span>Max Window</span>
+              </div>
+              <div className={`text-sm font-bold font-mono mt-0.5 ${
+                sevLower === 'critical' ? 'text-rose-400' :
+                sevLower === 'high' ? 'text-amber-400' : 'text-cyan-400'
+              }`}>
+                {repairData.days <= 2 ? '48 Hours' : `${repairData.days} Days`}
+              </div>
             </div>
           </div>
         </div>

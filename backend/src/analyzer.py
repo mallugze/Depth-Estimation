@@ -230,6 +230,41 @@ class Analyzer:
             else:
                 severity = "LOW"
 
+        # Repair Deadline & Remedial Engineering Protocol
+        if severity == "CRITICAL":
+            repair_deadline = "Immediate Action (Within 24 - 48 Hours)"
+            repair_days = 2
+            repair_priority = "PRIORITY 1 - EMERGENCY HAZARD"
+            repair_action = "Immediate structural shoring & load restriction. High-pressure polyurethane / epoxy structural injection with carbon-fiber reinforcement."
+            repair_risk_impact = "High risk of progressive structural displacement, rebar oxidation, and concrete spalling under dynamic loads."
+        elif severity == "HIGH":
+            repair_deadline = "Urgent Remediation (Within 7 - 14 Days)"
+            repair_days = 14
+            repair_priority = "PRIORITY 2 - URGENT"
+            repair_action = "Structural polymer epoxy injection and elastomeric waterproofing to prevent water penetration and internal rebar corrosion."
+            repair_risk_impact = "Active moisture ingress risk, accelerated chemical carbonation, and crack widening during thermal expansion cycles."
+        elif severity == "MEDIUM":
+            repair_deadline = "Scheduled Maintenance (Within 30 - 60 Days)"
+            repair_days = 45
+            repair_priority = "PRIORITY 3 - SCHEDULED"
+            repair_action = "Surface routing and elastomeric sealant application. Install telltale crack monitoring gauge to track dynamic displacement."
+            repair_risk_impact = "Moderate surface degradation. Potential progressive micro-fissuring if left unsealed against environmental weathering."
+        elif severity == "LOW":
+            repair_deadline = "Preventive Care (Within 90 - 180 Days)"
+            repair_days = 120
+            repair_priority = "PRIORITY 4 - PREVENTIVE"
+            repair_action = "Cosmetic crack filling with cementitious slurry or polymer sealant. Continue quarterly photographic inspection."
+            repair_risk_impact = "Minor hairline fissure. Superficial aesthetic impact with low structural consequence."
+        else:
+            repair_deadline = "Routine Annual Inspection (365 Days)"
+            repair_days = 365
+            repair_priority = "SAFE / ROUTINE"
+            repair_action = "No immediate structural repairs required. Surface is intact and within allowable planar tolerance. Continue scheduled annual structural health audit."
+            repair_risk_impact = "Negligible structural vulnerability. Planar surface integrity within acceptable civil engineering tolerances."
+
+        import datetime
+        target_date_str = (datetime.datetime.utcnow() + datetime.timedelta(days=repair_days)).strftime("%b %d, %Y")
+
         # 6. Generate Heatmap with selected colormap
         depth_min, depth_max = depth_map.min(), depth_map.max()
         depth_norm = (depth_map - depth_min) / (depth_max - depth_min + 1e-8)
@@ -256,6 +291,12 @@ class Analyzer:
             "confidence": round(top1_conf, 4),
             "severity": severity,
             "severity_score": severity_score,
+            "repair_deadline": repair_deadline,
+            "repair_days": repair_days,
+            "repair_target_date": target_date_str,
+            "repair_priority": repair_priority,
+            "repair_action": repair_action,
+            "repair_risk_impact": repair_risk_impact,
             "depth_std": depth_std,
             "crack_area_pct": crack_area_pct,
             "crack_length_px": crack_length_px,
